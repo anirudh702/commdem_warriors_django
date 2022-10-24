@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-rs4v4ka@inz9*j@d1174q^vynl(iq9gs@u5824fdtv0#^hwxz&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -81,7 +81,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'commdem_warriors',
-        'USER': 'anirudh.chawla',
+        'USER': 'postgres',
         'PASSWORD': '123',
         'HOST': '',
         'PORT': '',
@@ -130,3 +130,12 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR,'static/'),]
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CACHE_HOST='127.0.0.1'
+CACHE_PORT=11211
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
+        'LOCATION': f'{CACHE_HOST}:{CACHE_PORT}',
+    }
+}

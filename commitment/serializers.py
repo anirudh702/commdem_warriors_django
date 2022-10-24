@@ -47,10 +47,10 @@ class GetCommitmentNameSerializer(serializers.ModelSerializer):
 
 class GetCommitmentsSerializer(serializers.ModelSerializer):
     """Serializer for getting commitments"""
-    id = serializers.IntegerField(default=None)
+    # id = serializers.IntegerField(default=None)
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = CommitmentModel
-        fields = ["id"]
+        fields = ["user","commitment_date"]
         

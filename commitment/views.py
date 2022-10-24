@@ -10,6 +10,7 @@ from rest_framework import status
 from django.http.response import JsonResponse
 
 from user.models import UserModel
+from django.core.cache import cache
 
 # Create your views here.
 
@@ -200,33 +201,44 @@ def get_commitments(request):
         data = request.data
         serializer = GetCommitmentsSerializer(data=data)
         if serializer.is_valid():
-            commitment_id = serializer.data["id"]
-            if commitment_id is None:
-                commitment_data = list(
-                CommitmentModel.objects.values().filter())
-                for i in range(0,len(commitment_data)):
-                    commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
-                    commitment_data[i].pop('user_id')
-                    commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
-                    commitment_data[i].pop('category_id')
-                    commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
-                    commitment_data[i].pop('commitment_name_id')
+            user_id = serializer.data["user"]
+            commitment_date = serializer.data['commitment_date']
+            # if user_id is None:
+                # cache_key = "commitments"
+                # data = cache.get(cache_key)
+                # if data:
+                #    return Response(
+                #     ResponseData.success(
+                #         commitment_data, "Commitments fetched successfully"),
+                #     status=status.HTTP_201_CREATED)
+            commitment_data = list(
+            CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+            commitment_filtered_data = []
+            date_param = str(datetime.now()).split("T")[0]                
+            for i in range(0,len(commitment_data)):
+                commitment_data[i].pop('created_at')
+                commitment_data[i].pop('updated_at')
+                commitment_data[i].pop('user_id')
+                commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+                commitment_data[i].pop('category_id')
+                commitment_data[i]['category_data'].pop('created_at')
+                commitment_data[i]['category_data'].pop('updated_at')
+                commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i].pop('commitment_name_id')
+                commitment_data[i]['commitment_name_data'].pop('created_at')
+                commitment_data[i]['commitment_name_data'].pop('updated_at')
+                if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
+                        commitment_filtered_data.append(commitment_data[i])
+            # cache.set(cache_key, commitment_data)
+            if len(commitment_filtered_data) == 0:
                 return Response(
-                    ResponseData.success(
-                        commitment_data, "Commitments fetched successfully"),
-                    status=status.HTTP_201_CREATED)
-            else:
-                commitment_data = dict(CommitmentModel.objects.values().filter(id=commitment_id).get())
-                commitment_data['user_data'] = UserModel.objects.values().filter(id=commitment_data['user_id']).get()
-                commitment_data.pop('user_id')
-                commitment_data['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data['category_id']).get()
-                commitment_data.pop('category_id')
-                commitment_data['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data['commitment_name_id']).get()
-                commitment_data.pop('commitment_name_id')
-                return Response(
-                    ResponseData.success(
-                        commitment_data, "Commitment fetched successfully"),
-                    status=status.HTTP_201_CREATED)
+                ResponseData.success(
+                    [], "No commitment found"),
+                status=status.HTTP_201_CREATED)
+            return Response(
+                ResponseData.success(
+                    commitment_filtered_data, "Commitments fetched successfully"),
+                status=status.HTTP_201_CREATED)
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
