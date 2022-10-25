@@ -134,8 +134,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CACHE_HOST='127.0.0.1'
 CACHE_PORT=11211
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
-        'LOCATION': f'{CACHE_HOST}:{CACHE_PORT}',
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
 }
+CACHE_TTL = 60 * 1
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"

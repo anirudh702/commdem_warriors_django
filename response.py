@@ -27,4 +27,4 @@ class Response:
         """
         Common error method for API response
         """
-        return {"success": False, "error": error}
+        return {"success": False, "message": error}

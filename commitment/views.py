@@ -19,17 +19,21 @@ def add_new_commitment(request):
     """Function to add new commitment"""
     try:
         data = request.data
-        serializer = AddCommitmentSerializer(data=data)
-        if serializer.is_valid():
-            user_id = serializer.data["user"]
-            category_id = serializer.data["category"]
-            commitment_name_id = serializer.data["commitment_name"]
-            user = UserModel.objects.filter(id=user_id).first()
-            if not user:
-                return Response(
-                    ResponseData.error("User id is invalid"),
-                    status=status.HTTP_200_OK,
-                )
+        # serializer = AddCommitmentSerializer(data=data) 
+        # if serializer.is_valid():
+        user_id = request.data["user"]
+        commitment_category_id_with_name_id = request.data['category_id_with_name_id']
+        user = UserModel.objects.filter(id=user_id).first()
+        if not user:
+            return Response(
+                ResponseData.error("User id is invalid"),
+                status=status.HTTP_200_OK,
+            )
+        final_data = []
+        for i in range(0,len(str(commitment_category_id_with_name_id).split(','))):
+            both = str(commitment_category_id_with_name_id).split(',')[i].split(':')
+            category_id = both[0]
+            commitment_name_id = both[1]
             category = CommitmentCategoryModel.objects.filter(id=category_id).first()
             if not category:
                 return Response(
@@ -53,25 +57,31 @@ def add_new_commitment(request):
                     ResponseData.error("Commitment already exists with same category for day specified"),
                     status=status.HTTP_200_OK,
                 )
-            new_commitment = CommitmentModel.objects.create(
+            final_data.append(CommitmentModel(
                 user=UserModel(id=user_id),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
-            )
-            new_commitment.save()
-            commitment_details = list(
-                CommitmentModel.objects.values().filter(id=new_commitment.id))
-            return Response(
-                ResponseData.success(
-                    commitment_details[0], "Commitment for a user added successfully"),
-                status=status.HTTP_201_CREATED,
-            )
-        for error in serializer.errors:
-            print(serializer.errors[error][0])
+                ))
+        CommitmentModel.objects.bulk_create(final_data)
+        # new_commitment = CommitmentModel.objects.create(
+        #     user=UserModel(id=user_id),
+        #     category=CommitmentCategoryModel(id=category_id),
+        #     commitment_name=CommitmentNameModel(id=commitment_name_id),
+        # )
+        # new_commitment.save()
+        # commitment_details = list(
+        #     CommitmentModel.objects.values().filter(id=new_commitment.id))
         return Response(
-            ResponseData.error(serializer.errors[error][0]),
-            status=status.HTTP_400_BAD_REQUEST,
+            ResponseData.success_without_data(
+                 "Commitment added successfully"),
+            status=status.HTTP_201_CREATED,
         )
+        # for error in serializer.errors:
+        #     print(serializer.errors[error][0])
+        # return Response(
+        #     ResponseData.error(serializer.errors[error][0]),
+        #     status=status.HTTP_400_BAD_REQUEST,
+        # )
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -143,8 +153,8 @@ def add_new_commitment_name(request):
 
 
 @api_view(["POST"])
-def get_commitment_category(request):
-    """Function to get commitment category"""
+def get_commitment_category_with_name(request):
+    """Function to get commitment category with name"""
     try:
         data = request.data
         serializer = GetCommitmentCategorySerializer(data=data)
@@ -153,12 +163,29 @@ def get_commitment_category(request):
             if category_id is None:
                 commitment_category_data = list(
                 CommitmentCategoryModel.objects.values().filter())
+                for i in range(0,len(commitment_category_data)):
+                    commitment_category_data[i]['commitment_category_name_data'] = list(
+                CommitmentNameModel.objects.values().filter(category=CommitmentCategoryModel(id=commitment_category_data[i]['id'])))
+                    for j in range(0,len(commitment_category_data[i]['commitment_category_name_data'])):
+                        commitment_category_data[i]['commitment_category_name_data'][j].pop('created_at')
+                        commitment_category_data[i]['commitment_category_name_data'][j].pop('updated_at')
+                        commitment_category_data[i]['commitment_category_name_data'][j]['isSelected'] = False
+                    commitment_category_data[i].pop('created_at')
+                    commitment_category_data[i].pop('updated_at')
                 return Response(
                     ResponseData.success(
                         commitment_category_data, "Commitment categories fetched successfully"),
                     status=status.HTTP_201_CREATED)
             else:
-                commitment_category_data = CommitmentCategoryModel.objects.values().filter(id=category_id).get()
+                commitment_category_data = list(CommitmentCategoryModel.objects.values().filter(id=category_id).get())
+                commitment_category_data[0]['commitment_category_name_data'] = list(
+                CommitmentNameModel.objects.values().filter(category=CommitmentCategoryModel(id=category_id)))
+                for j in range(0,len(commitment_category_data[0]['commitment_category_name_data'])):
+                        commitment_category_data[0]['commitment_category_name_data'][j].pop('created_at')
+                        commitment_category_data[0]['commitment_category_name_data'][j].pop('updated_at')
+                        commitment_category_data[i]['commitment_category_name_data'][j]['isSelected'] = False
+                commitment_category_data[0].pop('created_at')
+                commitment_category_data[0].pop('updated_at')
                 return Response(
                     ResponseData.success(
                         commitment_category_data, "Commitment category fetched successfully"),
@@ -175,16 +202,22 @@ def get_commitment_name(request):
         data = request.data
         serializer = GetCommitmentNameSerializer(data=data)
         if serializer.is_valid():
-            name_id = serializer.data["id"]
-            if name_id is None:
+            category_id = serializer.data["category"]
+            if category_id is None:
                 commitment_name_data = list(
                 CommitmentNameModel.objects.values().filter())
+                for i in range(0,len(commitment_name_data)):
+                    commitment_name_data[i].pop('created_at')
+                    commitment_name_data[i].pop('updated_at')
                 return Response(
                     ResponseData.success(
                         commitment_name_data, "Commitment names fetched successfully"),
                     status=status.HTTP_201_CREATED)
             else:
-                commitment_name_data = CommitmentNameModel.objects.values().filter(id=name_id).get()
+                commitment_name_data = CommitmentNameModel.objects.values().filter(category = CommitmentCategoryModel(id=category_id)).all()
+                for i in range(0,len(commitment_name_data)):
+                    commitment_name_data[i].pop('created_at')
+                    commitment_name_data[i].pop('updated_at')
                 return Response(
                     ResponseData.success(
                         commitment_name_data, "Commitment name fetched successfully"),
@@ -204,13 +237,14 @@ def get_commitments(request):
             user_id = serializer.data["user"]
             commitment_date = serializer.data['commitment_date']
             # if user_id is None:
-                # cache_key = "commitments"
-                # data = cache.get(cache_key)
-                # if data:
-                #    return Response(
-                #     ResponseData.success(
-                #         commitment_data, "Commitments fetched successfully"),
-                #     status=status.HTTP_201_CREATED)
+            cache_key = "commitments"
+            data = cache.get(cache_key)
+            print(f"data {data}")
+            if data:
+               return Response(
+                ResponseData.success(
+                    commitment_data, "Commitments fetched successfully"),
+                status=status.HTTP_201_CREATED)
             commitment_data = list(
             CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
             commitment_filtered_data = []
@@ -229,7 +263,8 @@ def get_commitments(request):
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
                 if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
                         commitment_filtered_data.append(commitment_data[i])
-            # cache.set(cache_key, commitment_data)
+            cache.set(cache_key, commitment_data)
+            print(f'dfvd {cache.get(cache_key)}')
             if len(commitment_filtered_data) == 0:
                 return Response(
                 ResponseData.success(
