@@ -54,3 +54,11 @@ class GetCommitmentsSerializer(serializers.ModelSerializer):
         model = CommitmentModel
         fields = ["user","commitment_date"]
         
+class UpdateCommitmentsSerializer(serializers.ModelSerializer):
+    """Serializer for updating commitments"""
+    id = serializers.IntegerField()
+
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = CommitmentModel
+        fields = ["user","id","is_done"]

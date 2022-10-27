@@ -3,7 +3,7 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from commitment.models import CommitmentModel,CommitmentCategoryModel,CommitmentNameModel
 from rest_framework.response import Response
-from commitment.serializers import AddCommitmentSerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer
+from commitment.serializers import AddCommitmentSerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, UpdateCommitmentsSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -232,7 +232,14 @@ def get_commitments(request):
     """Function to get commitments"""
     try:
         data = request.data
+        user = UserModel.objects.filter(id=request.data['user']).first()
+        if not user:
+                return Response(
+                    ResponseData.error("User id is invalid"),
+                    status=status.HTTP_200_OK,
+                )
         serializer = GetCommitmentsSerializer(data=data)
+        print(f"serializer.is_valid() {serializer.is_valid()}")
         if serializer.is_valid():
             user_id = serializer.data["user"]
             commitment_date = serializer.data['commitment_date']
@@ -273,6 +280,43 @@ def get_commitments(request):
             return Response(
                 ResponseData.success(
                     commitment_filtered_data, "Commitments fetched successfully"),
+                status=status.HTTP_201_CREATED)
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
+def update_commitment(request):
+    """Function to update commitment based on user id and commitment id"""
+    try:
+        data = request.data
+        user = UserModel.objects.filter(id=request.data['user']).first()
+        if not user:
+                return Response(
+                    ResponseData.error("User id is invalid"),
+                    status=status.HTTP_200_OK,
+                )
+        commitment_id = CommitmentModel.objects.filter(id=request.data['id']).first()
+        if not commitment_id:
+                return Response(
+                    ResponseData.error("Commitment id is invalid"),
+                    status=status.HTTP_200_OK,
+                )
+        serializer = UpdateCommitmentsSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            commitment_id = serializer.data['id']
+            is_done = serializer.data['is_done']
+            commitment_data = CommitmentModel.objects.filter(
+                id=commitment_id,user=UserModel(id=user_id)
+            ).first()
+            commitment_data.is_done = is_done
+            commitment_data.is_updated = True
+            commitment_data.save()
+            return Response(
+                ResponseData.success_without_data("Commitment updated successfully"),
                 status=status.HTTP_201_CREATED)
     except Exception as exception:
         return Response(

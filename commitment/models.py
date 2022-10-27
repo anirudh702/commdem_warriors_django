@@ -37,6 +37,7 @@ class CommitmentModel(models.Model):
     commitment_name = models.ForeignKey(CommitmentNameModel, on_delete=models.CASCADE,null=True)
     commitment_date = models.DateTimeField(default=next_day_datetime, blank=True)
     is_done = models.BooleanField(default=False)
+    is_updated = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()

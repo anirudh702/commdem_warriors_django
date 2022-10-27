@@ -13,4 +13,5 @@ urlpatterns = [
     path('get_commitment_category_with_name/', views.get_commitment_category_with_name, name="get_commitment_category_with_name"),
     path('get_commitment_name/', views.get_commitment_name, name="get_commitment_name"),
     path('get_commitment/', views.get_commitments, name="get_commitments"),
+    path('update_commitment/', views.update_commitment, name="update_commitment"),
 ]
