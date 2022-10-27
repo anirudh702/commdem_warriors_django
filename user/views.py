@@ -44,7 +44,7 @@ def signup(request):
                 UserModel.objects.values().filter(id=new_user.id))
             return Response(
                 ResponseData.success(
-                    user_details[0], "User added successfully"),
+                    user_details[0]['id'], "User added successfully"),
                 status=status.HTTP_201_CREATED,
             )
         for error in serializer.errors:

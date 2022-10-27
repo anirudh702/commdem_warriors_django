@@ -237,14 +237,14 @@ def get_commitments(request):
             user_id = serializer.data["user"]
             commitment_date = serializer.data['commitment_date']
             # if user_id is None:
-            cache_key = "commitments"
-            data = cache.get(cache_key)
-            print(f"data {data}")
-            if data:
-               return Response(
-                ResponseData.success(
-                    commitment_data, "Commitments fetched successfully"),
-                status=status.HTTP_201_CREATED)
+            # cache_key = "commitments"
+            # data = cache.get(cache_key)
+            # print(f"data {data}")
+            # if data:
+            #    return Response(
+            #     ResponseData.success(
+            #         commitment_data, "Commitments fetched successfully"),
+            #     status=status.HTTP_201_CREATED)
             commitment_data = list(
             CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
             commitment_filtered_data = []
@@ -263,8 +263,8 @@ def get_commitments(request):
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
                 if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
                         commitment_filtered_data.append(commitment_data[i])
-            cache.set(cache_key, commitment_data)
-            print(f'dfvd {cache.get(cache_key)}')
+            # cache.set(cache_key, commitment_data)
+            # print(f'dfvd {cache.get(cache_key)}')
             if len(commitment_filtered_data) == 0:
                 return Response(
                 ResponseData.success(
