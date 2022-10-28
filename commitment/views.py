@@ -46,7 +46,9 @@ def add_new_commitment(request):
                     ResponseData.error("Commitment name id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            commitment_category_data = CommitmentModel.objects.filter(category_id=category_id).all()
+            print(f"category_id {category_id}")
+            commitment_category_data = CommitmentModel.objects.filter(user=UserModel(id=user_id),category_id=category_id).all()
+            print(f"commitment_category_data {commitment_category_data}")
             already_exists = False
             for i in range(0,len(commitment_category_data)):
                 if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=1)).split(' ')[0]) or str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now()).split(' ')[0]):
@@ -59,6 +61,7 @@ def add_new_commitment(request):
                 )
             final_data.append(CommitmentModel(
                 user=UserModel(id=user_id),
+                # commitment_date=datetime.now() + timedelta(days=1),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
@@ -243,6 +246,8 @@ def get_commitments(request):
         if serializer.is_valid():
             user_id = serializer.data["user"]
             commitment_date = serializer.data['commitment_date']
+            start_date = serializer.data['start_date']
+            end_date = serializer.data['end_date']
             # if user_id is None:
             # cache_key = "commitments"
             # data = cache.get(cache_key)
@@ -254,6 +259,12 @@ def get_commitments(request):
             #     status=status.HTTP_201_CREATED)
             commitment_data = list(
             CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+            print(f"commitment_data {len(commitment_data)}")
+            if len(commitment_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
             commitment_filtered_data = []
             date_param = str(datetime.now()).split("T")[0]                
             for i in range(0,len(commitment_data)):
@@ -268,19 +279,44 @@ def get_commitments(request):
                 commitment_data[i].pop('commitment_name_id')
                 commitment_data[i]['commitment_name_data'].pop('created_at')
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
-                if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
+            if commitment_date is not None:
+                   print(f"commitment_data[i]['commitment_date'] {commitment_data[i]['commitment_date']}")
+                   print(f"commitment_date {commitment_date}")
+                   for i in range(0,len(commitment_data)):
+                     if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
                         commitment_filtered_data.append(commitment_data[i])
+                   if len(commitment_filtered_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+                   return Response(
+                       ResponseData.success(
+                           commitment_filtered_data, "Commitments fetched successfully"),
+                       status=status.HTTP_201_CREATED)
             # cache.set(cache_key, commitment_data)
             # print(f'dfvd {cache.get(cache_key)}')
-            if len(commitment_filtered_data) == 0:
-                return Response(
-                ResponseData.success(
-                    [], "No commitment found"),
-                status=status.HTTP_201_CREATED)
-            return Response(
-                ResponseData.success(
-                    commitment_filtered_data, "Commitments fetched successfully"),
-                status=status.HTTP_201_CREATED)
+            elif(start_date is not None and end_date is not None):
+                   for i in range(0,len(commitment_data)):
+                     sub_start_date = datetime.strptime(str(start_date).split("T")[0], "%Y-%m-%d").date()
+                     sub_end_date = datetime.strptime(str(end_date).split("T")[0], "%Y-%m-%d").date()
+                     current_date = datetime.strptime(str(commitment_data[i]['commitment_date']).split(" ")[0], "%Y-%m-%d").date()
+                     if current_date >= sub_start_date and current_date <= sub_end_date:
+                        commitment_filtered_data.append(commitment_data[i])
+                   if len(commitment_filtered_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+                   return Response(
+                       ResponseData.success(
+                           commitment_filtered_data, "Commitments fetched successfully"),
+                       status=status.HTTP_201_CREATED)
+            else:
+                    return Response(
+                       ResponseData.success(
+                           commitment_data, "Commitments fetched successfully"),
+                       status=status.HTTP_201_CREATED)
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
