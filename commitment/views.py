@@ -19,8 +19,6 @@ def add_new_commitment(request):
     """Function to add new commitment"""
     try:
         data = request.data
-        # serializer = AddCommitmentSerializer(data=data) 
-        # if serializer.is_valid():
         user_id = request.data["user"]
         commitment_category_id_with_name_id = request.data['category_id_with_name_id']
         user = UserModel.objects.filter(id=user_id).first()
@@ -235,30 +233,53 @@ def get_commitments(request):
     """Function to get commitments"""
     try:
         data = request.data
-        user = UserModel.objects.filter(id=request.data['user']).first()
-        if not user:
-                return Response(
-                    ResponseData.error("User id is invalid"),
-                    status=status.HTTP_200_OK,
-                )
+        if request.data['user'] != "":
+           user = UserModel.objects.filter(id=request.data['user']).first()
+           if not user:
+                   return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
         serializer = GetCommitmentsSerializer(data=data)
-        print(f"serializer.is_valid() {serializer.is_valid()}")
         if serializer.is_valid():
             user_id = serializer.data["user"]
             commitment_date = serializer.data['commitment_date']
             start_date = serializer.data['start_date']
             end_date = serializer.data['end_date']
-            # if user_id is None:
-            # cache_key = "commitments"
-            # data = cache.get(cache_key)
-            # print(f"data {data}")
-            # if data:
-            #    return Response(
-            #     ResponseData.success(
-            #         commitment_data, "Commitments fetched successfully"),
-            #     status=status.HTTP_201_CREATED)
-            commitment_data = list(
-            CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+            cache_key = ""     
+            # if commitment_date is not None:
+            #        cache_key = f"get_commitment_{str(commitment_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(commitment_date).split('T')[0]}_{user_id}"
+            #        data = cache.get(cache_key)
+            #        if data:
+            #           return Response(
+            #            ResponseData.success(
+            #                data, "Commitments fetched successfully"),
+            #            status=status.HTTP_201_CREATED)
+            # elif(start_date is not None and end_date is not None):
+            #        cache_key = f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}_{user_id}"
+            #        data = cache.get(cache_key)
+            #        print(f"data {data}")
+            #        if data:
+            #           return Response(
+            #            ResponseData.success(
+            #                data, "Commitments fetched successfully"),
+            #            status=status.HTTP_201_CREATED)
+            # else:
+            #        cache_key = "get_commitment_commitment_data" if user_id is None else f"get_commitment_commitment_data_{user_id}"
+            #        data = cache.get(cache_key)
+            #        if data:
+            #           return Response(
+            #            ResponseData.success(
+            #                data, "Commitments fetched successfully"),
+            #            status=status.HTTP_201_CREATED)
+            print(f"cache_key {cache.get_many('keys')}")
+            commitment_data = []
+            if user_id is not None:
+                commitment_data = list(
+                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+            else:
+                commitment_data = list(
+            CommitmentModel.objects.values().filter())
             print(f"commitment_data {len(commitment_data)}")
             if len(commitment_data) == 0:
                        return Response(
@@ -266,7 +287,7 @@ def get_commitments(request):
                            [], "No commitment found"),
                        status=status.HTTP_201_CREATED)
             commitment_filtered_data = []
-            date_param = str(datetime.now()).split("T")[0]                
+            date_param = str(datetime.now()).split("T")[0]           
             for i in range(0,len(commitment_data)):
                 commitment_data[i].pop('created_at')
                 commitment_data[i].pop('updated_at')
@@ -279,9 +300,10 @@ def get_commitments(request):
                 commitment_data[i].pop('commitment_name_id')
                 commitment_data[i]['commitment_name_data'].pop('created_at')
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
+            if commitment_date is None and start_date is None and end_date is None:
+                cache_key = "commitment_data" if user_id is None else f"commitment_data_{user_id}"
+                cache.set(cache_key, commitment_data)
             if commitment_date is not None:
-                   print(f"commitment_data[i]['commitment_date'] {commitment_data[i]['commitment_date']}")
-                   print(f"commitment_date {commitment_date}")
                    for i in range(0,len(commitment_data)):
                      if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
                         commitment_filtered_data.append(commitment_data[i])
@@ -290,6 +312,7 @@ def get_commitments(request):
                        ResponseData.success(
                            [], "No commitment found"),
                        status=status.HTTP_201_CREATED)
+                   cache.set(cache_key, commitment_filtered_data)
                    return Response(
                        ResponseData.success(
                            commitment_filtered_data, "Commitments fetched successfully"),
@@ -308,6 +331,7 @@ def get_commitments(request):
                        ResponseData.success(
                            [], "No commitment found"),
                        status=status.HTTP_201_CREATED)
+                   cache.set(cache_key, commitment_filtered_data)
                    return Response(
                        ResponseData.success(
                            commitment_filtered_data, "Commitments fetched successfully"),

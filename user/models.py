@@ -19,3 +19,14 @@ class UserModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+
+class UserPaymentDetailsModel(models.Model):
+    """Model for user payment details"""
+    id = models.AutoField(primary_key=True)
+    user_id = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
+    payment_id = models.CharField(max_length=50)
+    amount_in_dollars = models.CharField(max_length=50)
+    date_of_payment = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()

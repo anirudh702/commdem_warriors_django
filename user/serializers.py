@@ -2,7 +2,7 @@
 
 from dataclasses import fields
 from rest_framework import serializers
-from user.models import UserModel
+from user.models import UserModel, UserPaymentDetailsModel
 from django.contrib.auth import password_validation
 
 
@@ -21,7 +21,15 @@ class UserSignUpSerializer(serializers.ModelSerializer):
 
 class UserSignInSerializer(serializers.ModelSerializer):
     """Serializer for User sign in details"""
+    username = serializers.CharField()
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = UserModel
-        fields = ["mobile_number","password"]
+        fields = ["password","username"]
+
+class AddNewPaymentSerializer(serializers.ModelSerializer):
+    """Serializer for adding new payment details"""
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserPaymentDetailsModel
+        exclude = ["created_at","updated_at"]

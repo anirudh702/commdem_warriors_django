@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
-from user.models import UserModel
+from user.models import UserModel, UserPaymentDetailsModel
 from rest_framework.response import Response
-from user.serializers import UserSignInSerializer, UserSignUpSerializer
+from user.serializers import AddNewPaymentSerializer, UserSignInSerializer, UserSignUpSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -67,9 +67,9 @@ def signin(request):
         print(f"IsValid: {serializer.is_valid()}")
         if serializer.is_valid():
             password = serializer.data["password"]
-            mobile_number = serializer.data["mobile_number"]
+            username = serializer.data["username"]
             user = UserModel.objects.filter(
-                mobile_number=mobile_number, password=password).first()
+                first_name=str(username).split(".")[0],last_name=str(username).split(".")[1],password=password).first()
             if not user:
                 return Response(
                     ResponseData.error(
@@ -77,10 +77,11 @@ def signin(request):
                     status=status.HTTP_201_CREATED,
                 )
             user_details = list(
-                UserModel.objects.values().filter(mobile_number=mobile_number, password=password))
+                UserModel.objects.values().filter(first_name=str(username).split(".")[0],last_name=str(username).split(".")[1],
+                 password=password))
             return JsonResponse(
                     ResponseData.success(
-                        user_details[0], "User logged in successfully"),
+                        user_details[0]['id'], "User logged in successfully"),
                     safe=False,
                 )
         return Response(
@@ -91,4 +92,40 @@ def signin(request):
         return Response(
             ResponseData.error(str(exception)),
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(["POST"])
+def addNewPayment(request):
+    """Function to add new payment done by a user"""
+    try:
+        data = request.data
+        serializer = AddNewPaymentSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user_id"]
+            payment_id = serializer.data["payment_id"]
+            amount_in_dollars = serializer.data["amount_in_dollars"]
+            date_of_payment = serializer.data['date_of_payment']
+            new_payment_record = UserPaymentDetailsModel.objects.create(
+                user_id=UserModel(id=user_id),
+                payment_id=payment_id,
+                amount_in_dollars=amount_in_dollars,
+                date_of_payment=date_of_payment,
+            )
+            new_payment_record.save()
+            # payment_details = list(
+            #     UserPaymentDetailsModel.objects.values().filter(id=new_payment_record.id))
+            return Response(
+                ResponseData.success_without_data(
+                    "Payment done successfully"),
+                status=status.HTTP_201_CREATED,
+            )
+        for error in serializer.errors:
+            print(serializer.errors[error][0])
+        return Response(
+            ResponseData.error(serializer.errors[error][0]),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
