@@ -51,3 +51,13 @@ class CommitmentGraphDataModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+
+class CauseOfCategorySuccessOrFailureModel(models.Model):
+    """Model for cause of category success/failure data"""
+    id = models.AutoField(primary_key=True)
+    category = models.ForeignKey(CommitmentCategoryModel, on_delete=models.CASCADE,null=False)
+    title = models.CharField(max_length=200,null=False,unique=True)
+    is_success = models.BooleanField(null=False)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()

@@ -2,7 +2,7 @@
 
 from dataclasses import fields
 from rest_framework import serializers
-from commitment.models import CommitmentCategoryModel, CommitmentModel, CommitmentNameModel
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentModel, CommitmentNameModel
 
 
 class AddCommitmentSerializer(serializers.ModelSerializer):
@@ -64,3 +64,22 @@ class UpdateCommitmentsSerializer(serializers.ModelSerializer):
         """Meta class to change behaviour of model fields"""
         model = CommitmentModel
         fields = ["user","id","is_done"]
+
+
+class AddCauseOfCategorySerializer(serializers.ModelSerializer):
+    """Serializer for adding cause of category data success/failure"""
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = CauseOfCategorySuccessOrFailureModel
+        exclude = ["created_at","updated_at"]
+
+    
+class GetCauseOfCategorySerializer(serializers.ModelSerializer):
+    """Serializer for getting cause of category success or failure"""
+    id = serializers.IntegerField(default=None)
+    is_success = serializers.BooleanField(default=None)
+
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = CauseOfCategorySuccessOrFailureModel
+        fields = ["id","is_success","category"]

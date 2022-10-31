@@ -15,6 +15,7 @@ class UserModel(models.Model):
     designation = models.CharField(max_length=50,null=False)
     is_medicine_ongoing = models.BooleanField(default=False)
     any_health_issues = models.BooleanField(default=False)
+    is_subscribed = models.BooleanField(default=False)
     joining_date = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)

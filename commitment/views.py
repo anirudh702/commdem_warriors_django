@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 from django.shortcuts import render
 from rest_framework.decorators import api_view
-from commitment.models import CommitmentModel,CommitmentCategoryModel,CommitmentNameModel
+from commitment import serializers
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel
 from rest_framework.response import Response
-from commitment.serializers import AddCommitmentSerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, UpdateCommitmentsSerializer
+from commitment.serializers import AddCauseOfCategorySerializer, AddCommitmentSerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, UpdateCommitmentsSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -44,7 +45,6 @@ def add_new_commitment(request):
                     ResponseData.error("Commitment name id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            print(f"category_id {category_id}")
             commitment_category_data = CommitmentModel.objects.filter(user=UserModel(id=user_id),category_id=category_id).all()
             print(f"commitment_category_data {commitment_category_data}")
             already_exists = False
@@ -83,6 +83,10 @@ def add_new_commitment(request):
         #     ResponseData.error(serializer.errors[error][0]),
         #     status=status.HTTP_400_BAD_REQUEST,
         # )
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -111,6 +115,92 @@ def add_new_commitment_category(request):
             ResponseData.error(serializer.errors[error][0]),
             status=status.HTTP_400_BAD_REQUEST,
         )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def add_cause_of_category_success_or_failure(request):
+    """Function to add cause of category failure or success"""
+    try:
+        data = request.data
+        serializer = AddCauseOfCategorySerializer(data=data)
+        if serializer.is_valid():
+            category_id = serializer.data["category"]
+            title = serializer.data["title"]
+            is_success = serializer.data['is_success']
+            category = CommitmentCategoryModel.objects.filter(id=category_id).first()
+            if not category:
+                return Response(
+                    ResponseData.error("Category id is invalid"),
+                    status=status.HTTP_200_OK,
+                )
+            data_exist_or_not = CauseOfCategorySuccessOrFailureModel.objects.filter(category=CommitmentCategoryModel(id=category_id),title=title).first()
+            if data_exist_or_not:
+                return Response(
+                    ResponseData.error("This data already exists"),
+                    status=status.HTTP_200_OK,
+                )
+            new_cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.create(
+                category = CommitmentCategoryModel(id=category_id),
+                title = title,
+                is_success = is_success
+            )
+            new_cause_of_category.save()
+            return Response(
+                ResponseData.success(
+                    [], "Cause of category success/failure added successfully"),
+                status=status.HTTP_201_CREATED,
+            )
+        for error in serializer.errors:
+            print(serializer.errors[error][0])
+        return Response(
+            ResponseData.error(serializer.errors[error][0]),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def get_cause_of_category_success_or_failure(request):
+    """Function to get cause of category success or failure data"""
+    try:
+        data = request.data
+        serializer = GetCauseOfCategorySerializer(data=data)
+        if serializer.is_valid():
+            print("dscdscdscs")
+            cause_of_category_id = serializer.data["id"]
+            category_id = serializer.data['category']
+            is_success = serializer.data['is_success']
+            category = CommitmentCategoryModel.objects.filter(id=category_id).first()
+            print(f"categorcdcdy {category}")
+            if not category:
+                return Response(
+                    ResponseData.error("Category id is invalid"),
+                    status=status.HTTP_200_OK,
+                )
+            cause_of_category_data = CauseOfCategorySuccessOrFailureModel.objects.filter(id=cause_of_category_id,category = CommitmentCategoryModel(id=category_id)).first()
+            if not cause_of_category_data:
+                return Response(
+                    ResponseData.error("Cause of category id is invalid"),
+                    status=status.HTTP_200_OK,
+                )
+            cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=cause_of_category_id,
+            category = CommitmentCategoryModel(id=category_id),is_success=is_success).all()
+            for i in range(0,len(cause_of_category)):
+                cause_of_category[i].pop('created_at')
+                cause_of_category[i].pop('updated_at')
+            return Response(
+                ResponseData.success(
+                    cause_of_category, "Cause of category data fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -191,6 +281,10 @@ def get_commitment_category_with_name(request):
                     ResponseData.success(
                         commitment_category_data, "Commitment category fetched successfully"),
                     status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -223,48 +317,24 @@ def get_commitment_name(request):
                     ResponseData.success(
                         commitment_name_data, "Commitment name fetched successfully"),
                     status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 @api_view(["POST"])
-def get_commitments(request):
-    """Function to get commitments"""
+def get_all_commitments(request):
+    """Function to get user commitments"""
     try:
         data = request.data
-        if request.data['user'] != "":
-           user = UserModel.objects.filter(id=request.data['user']).first()
-           if not user:
-                   return Response(
-                       ResponseData.error("User id is invalid"),
-                       status=status.HTTP_200_OK,
-                   )
         serializer = GetCommitmentsSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user"]
-            commitment_date = serializer.data['commitment_date']
-            start_date = serializer.data['start_date']
-            end_date = serializer.data['end_date']
             cache_key = ""     
-            # if commitment_date is not None:
-            #        cache_key = f"get_commitment_{str(commitment_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(commitment_date).split('T')[0]}_{user_id}"
-            #        data = cache.get(cache_key)
-            #        if data:
-            #           return Response(
-            #            ResponseData.success(
-            #                data, "Commitments fetched successfully"),
-            #            status=status.HTTP_201_CREATED)
-            # elif(start_date is not None and end_date is not None):
-            #        cache_key = f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}_{user_id}"
-            #        data = cache.get(cache_key)
-            #        print(f"data {data}")
-            #        if data:
-            #           return Response(
-            #            ResponseData.success(
-            #                data, "Commitments fetched successfully"),
-            #            status=status.HTTP_201_CREATED)
-            # else:
             #        cache_key = "get_commitment_commitment_data" if user_id is None else f"get_commitment_commitment_data_{user_id}"
             #        data = cache.get(cache_key)
             #        if data:
@@ -272,22 +342,14 @@ def get_commitments(request):
             #            ResponseData.success(
             #                data, "Commitments fetched successfully"),
             #            status=status.HTTP_201_CREATED)
-            print(f"cache_key {cache.get_many('keys')}")
             commitment_data = []
-            if user_id is not None:
-                commitment_data = list(
-                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
-            else:
-                commitment_data = list(
-            CommitmentModel.objects.values().filter())
-            print(f"commitment_data {len(commitment_data)}")
+            commitment_data = list(
+                CommitmentModel.objects.values().filter())
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
                            [], "No commitment found"),
                        status=status.HTTP_201_CREATED)
-            commitment_filtered_data = []
-            date_param = str(datetime.now()).split("T")[0]           
             for i in range(0,len(commitment_data)):
                 commitment_data[i].pop('created_at')
                 commitment_data[i].pop('updated_at')
@@ -300,52 +362,213 @@ def get_commitments(request):
                 commitment_data[i].pop('commitment_name_id')
                 commitment_data[i]['commitment_name_data'].pop('created_at')
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
-            if commitment_date is None and start_date is None and end_date is None:
-                cache_key = "commitment_data" if user_id is None else f"commitment_data_{user_id}"
-                cache.set(cache_key, commitment_data)
-            if commitment_date is not None:
-                   for i in range(0,len(commitment_data)):
-                     if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
-                        commitment_filtered_data.append(commitment_data[i])
-                   if len(commitment_filtered_data) == 0:
-                       return Response(
-                       ResponseData.success(
-                           [], "No commitment found"),
-                       status=status.HTTP_201_CREATED)
-                   cache.set(cache_key, commitment_filtered_data)
-                   return Response(
-                       ResponseData.success(
-                           commitment_filtered_data, "Commitments fetched successfully"),
-                       status=status.HTTP_201_CREATED)
-            # cache.set(cache_key, commitment_data)
-            # print(f'dfvd {cache.get(cache_key)}')
-            elif(start_date is not None and end_date is not None):
-                   for i in range(0,len(commitment_data)):
-                     sub_start_date = datetime.strptime(str(start_date).split("T")[0], "%Y-%m-%d").date()
-                     sub_end_date = datetime.strptime(str(end_date).split("T")[0], "%Y-%m-%d").date()
-                     current_date = datetime.strptime(str(commitment_data[i]['commitment_date']).split(" ")[0], "%Y-%m-%d").date()
-                     if current_date >= sub_start_date and current_date <= sub_end_date:
-                        commitment_filtered_data.append(commitment_data[i])
-                   if len(commitment_filtered_data) == 0:
-                       return Response(
-                       ResponseData.success(
-                           [], "No commitment found"),
-                       status=status.HTTP_201_CREATED)
-                   cache.set(cache_key, commitment_filtered_data)
-                   return Response(
-                       ResponseData.success(
-                           commitment_filtered_data, "Commitments fetched successfully"),
-                       status=status.HTTP_201_CREATED)
-            else:
-                    return Response(
+            return Response(
                        ResponseData.success(
                            commitment_data, "Commitments fetched successfully"),
                        status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@api_view(["POST"])
+def get_user_commitments(request):
+    """Function to get user commitments"""
+    try:
+        data = request.data
+        user = UserModel.objects.filter(id=request.data['user']).first()
+        if not user:
+                   return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+        serializer = GetCommitmentsSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            cache_key = ""     
+            cache_key = "get_commitment_data" if user_id is None else f"get_commitment_data_{user_id}"
+            data = cache.get(cache_key)
+            if data:
+               return Response(
+                ResponseData.success(
+                    data, "Commitments fetched successfully"),
+                status=status.HTTP_201_CREATED)
+            print("dvdvdf")
+            commitment_data = []
+            commitment_data = list(
+                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+            if len(commitment_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+            for i in range(0,len(commitment_data)):
+                commitment_data[i].pop('created_at')
+                commitment_data[i].pop('updated_at')
+                commitment_data[i].pop('user_id')
+                commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+                commitment_data[i].pop('category_id')
+                commitment_data[i]['category_data'].pop('created_at')
+                commitment_data[i]['category_data'].pop('updated_at')
+                commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i].pop('commitment_name_id')
+                commitment_data[i]['commitment_name_data'].pop('created_at')
+                commitment_data[i]['commitment_name_data'].pop('updated_at')
+            cache.set(cache_key, commitment_data,timeout=10)
+            return Response(
+                       ResponseData.success(
+                           commitment_data, "Commitments fetched successfully"),
+                       status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def get_user_commitments_by_commitment_date_only(request):
+    """Function to get user commitments based on commitment date only"""
+    try:
+        data = request.data
+        user = UserModel.objects.filter(id=request.data['user']).first()
+        if not user:
+                   return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+        serializer = GetCommitmentsSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            commitment_date = serializer.data['commitment_date']
+            cache_key = ""     
+            cache_key = f"get_commitment_{str(commitment_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(commitment_date).split('T')[0]}_{user_id}"
+            data = cache.get(cache_key)
+            if data:
+               return Response(
+                ResponseData.success(
+                    data, "Commitments fetched successfully"),
+                status=status.HTTP_201_CREATED)
+            commitment_data = []
+            commitment_data = list(
+                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+            if len(commitment_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+            commitment_filtered_data = []
+            for i in range(0,len(commitment_data)):
+                commitment_data[i].pop('created_at')
+                commitment_data[i].pop('updated_at')
+                commitment_data[i].pop('user_id')
+                commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+                commitment_data[i].pop('category_id')
+                commitment_data[i]['category_data'].pop('created_at')
+                commitment_data[i]['category_data'].pop('updated_at')
+                commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i].pop('commitment_name_id')
+                commitment_data[i]['commitment_name_data'].pop('created_at')
+                commitment_data[i]['commitment_name_data'].pop('updated_at')
+            # cache.set(cache_key, commitment_data)
+            for i in range(0,len(commitment_data)):
+                     if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
+                        commitment_filtered_data.append(commitment_data[i])
+            if len(commitment_filtered_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+            cache.set(cache_key, commitment_filtered_data)
+            return Response(
+                       ResponseData.success(
+                           commitment_filtered_data, "Commitments fetched successfully"),
+                       status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def get_user_commitments_by_start_end_date_only(request):
+    """Function to get user commitments based on start and end date only"""
+    try:
+        data = request.data
+        user = UserModel.objects.filter(id=request.data['user']).first()
+        if not user:
+                   return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+        serializer = GetCommitmentsSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            start_date = serializer.data['start_date']
+            end_date = serializer.data['end_date']
+            cache_key = ""     
+            #        cache_key = f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}_{user_id}"
+            #        data = cache.get(cache_key)
+            #        print(f"data {data}")
+            #        if data:
+            #           return Response(
+            #            ResponseData.success(
+            #                data, "Commitments fetched successfully"),
+            #            status=status.HTTP_201_CREATED)
+            commitment_data = []
+            commitment_data = list(
+            CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+            if len(commitment_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+            commitment_filtered_data = []
+            for i in range(0,len(commitment_data)):
+                commitment_data[i].pop('created_at')
+                commitment_data[i].pop('updated_at')
+                commitment_data[i].pop('user_id')
+                commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+                commitment_data[i].pop('category_id')
+                commitment_data[i]['category_data'].pop('created_at')
+                commitment_data[i]['category_data'].pop('updated_at')
+                commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i].pop('commitment_name_id')
+                commitment_data[i]['commitment_name_data'].pop('created_at')
+                commitment_data[i]['commitment_name_data'].pop('updated_at')
+            for i in range(0,len(commitment_data)):
+              sub_start_date = datetime.strptime(str(start_date).split("T")[0], "%Y-%m-%d").date()
+              sub_end_date = datetime.strptime(str(end_date).split("T")[0], "%Y-%m-%d").date()
+              current_date = datetime.strptime(str(commitment_data[i]['commitment_date']).split(" ")[0], "%Y-%m-%d").date()
+              if current_date >= sub_start_date and current_date <= sub_end_date:
+                 commitment_filtered_data.append(commitment_data[i])
+            if len(commitment_filtered_data) == 0:
+                return Response(
+                ResponseData.success(
+                    [], "No commitment found"),
+                status=status.HTTP_201_CREATED)
+            cache.set(cache_key, commitment_filtered_data)
+            return Response(
+                ResponseData.success(
+                    commitment_filtered_data, "Commitments fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(["POST"])
 def update_commitment(request):
@@ -378,6 +601,10 @@ def update_commitment(request):
             return Response(
                 ResponseData.success_without_data("Commitment updated successfully"),
                 status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR

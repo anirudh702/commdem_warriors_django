@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from user.models import UserModel, UserPaymentDetailsModel
 from rest_framework.response import Response
-from user.serializers import AddNewPaymentSerializer, UserSignInSerializer, UserSignUpSerializer
+from user.serializers import AddNewPaymentSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -95,6 +95,39 @@ def signin(request):
         )
 
 @api_view(["POST"])
+def is_user_subscribed(request):
+    """Function to let user sign in"""
+    try:
+        data = request.data
+        serializer = UserSubscribedOrNotSerializer(data=data)
+        print(f"IsValid: {serializer.is_valid()}")
+        if serializer.is_valid():
+            user_id = serializer.data['id']
+            print(f'user_id {serializer.data}')
+            user = UserModel.objects.filter(
+                id=user_id).first()
+            if not user:
+                return Response(
+                    ResponseData.error(
+                        "Account does not exists, please register first"),
+                    status=status.HTTP_201_CREATED,
+                )
+            return JsonResponse(
+                    ResponseData.user_subscribed(
+                        "Api called successfully", user.is_subscribed),
+                    safe=False,
+                )
+        return Response(
+            ResponseData.error(serializer.errors),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)),
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(["POST"])
 def addNewPayment(request):
     """Function to add new payment done by a user"""
     try:
@@ -114,6 +147,11 @@ def addNewPayment(request):
             new_payment_record.save()
             # payment_details = list(
             #     UserPaymentDetailsModel.objects.values().filter(id=new_payment_record.id))
+            user_data = UserModel.objects.filter(
+                    id=user_id
+                ).first()
+            user_data.is_subscribed = True
+            user_data.save()
             return Response(
                 ResponseData.success_without_data(
                     "Payment done successfully"),

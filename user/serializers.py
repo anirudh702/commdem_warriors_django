@@ -33,3 +33,11 @@ class AddNewPaymentSerializer(serializers.ModelSerializer):
         """Meta class to change behaviour of model fields"""
         model = UserPaymentDetailsModel
         exclude = ["created_at","updated_at"]
+
+class UserSubscribedOrNotSerializer(serializers.ModelSerializer):
+    """Serializer for checking if user is subscribed or not"""
+    id = serializers.IntegerField()
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserModel
+        fields = ['id']

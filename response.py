@@ -28,3 +28,10 @@ class Response:
         Common error method for API response
         """
         return {"success": False, "message": error}
+
+    @classmethod
+    def user_subscribed(cls, message,is_subscribed):
+        """
+        Common error method for API response
+        """
+        return {"success": True, "message": message, "is_subscribed" : is_subscribed}
