@@ -76,10 +76,9 @@ class AddCauseOfCategorySerializer(serializers.ModelSerializer):
     
 class GetCauseOfCategorySerializer(serializers.ModelSerializer):
     """Serializer for getting cause of category success or failure"""
-    id = serializers.IntegerField(default=None)
     is_success = serializers.BooleanField(default=None)
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = CauseOfCategorySuccessOrFailureModel
-        fields = ["id","is_success","category"]
+        fields = ["is_success","category"]

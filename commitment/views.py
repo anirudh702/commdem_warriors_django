@@ -172,7 +172,6 @@ def get_cause_of_category_success_or_failure(request):
         serializer = GetCauseOfCategorySerializer(data=data)
         if serializer.is_valid():
             print("dscdscdscs")
-            cause_of_category_id = serializer.data["id"]
             category_id = serializer.data['category']
             is_success = serializer.data['is_success']
             category = CommitmentCategoryModel.objects.filter(id=category_id).first()
@@ -182,13 +181,13 @@ def get_cause_of_category_success_or_failure(request):
                     ResponseData.error("Category id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            cause_of_category_data = CauseOfCategorySuccessOrFailureModel.objects.filter(id=cause_of_category_id,category = CommitmentCategoryModel(id=category_id)).first()
+            cause_of_category_data = CauseOfCategorySuccessOrFailureModel.objects.filter(category = CommitmentCategoryModel(id=category_id)).first()
             if not cause_of_category_data:
                 return Response(
                     ResponseData.error("Cause of category id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=cause_of_category_id,
+            cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.values().filter(
             category = CommitmentCategoryModel(id=category_id),is_success=is_success).all()
             for i in range(0,len(cause_of_category)):
                 cause_of_category[i].pop('created_at')
