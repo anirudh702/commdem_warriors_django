@@ -2,6 +2,8 @@ from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 import django
 
+from subscription.models import SubscriptionModel
+
 # Create your models here.
 class UserModel(models.Model):
     """Model for user data"""
@@ -28,6 +30,15 @@ class UserPaymentDetailsModel(models.Model):
     payment_id = models.CharField(max_length=50)
     amount_in_dollars = models.CharField(max_length=50)
     date_of_payment = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()
+
+class UserSubscriptionDetailsModel(models.Model):
+    """Model for user subscription details"""
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
+    subscription = models.ForeignKey(SubscriptionModel, on_delete=models.CASCADE,null=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()

@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
-from user.models import UserModel, UserPaymentDetailsModel
+from subscription.models import SubscriptionModel
+from user.models import UserModel, UserPaymentDetailsModel, UserSubscriptionDetailsModel
 from rest_framework.response import Response
-from user.serializers import AddNewPaymentSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
+from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetUserSubscriptionSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -157,6 +158,131 @@ def addNewPayment(request):
                     "Payment done successfully"),
                 status=status.HTTP_201_CREATED,
             )
+        for error in serializer.errors:
+            print(serializer.errors[error][0])
+        return Response(
+            ResponseData.error(serializer.errors[error][0]),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def addNewSubscription(request):
+    """Function to add new subscription details of a user"""
+    try:
+        data = request.data
+        serializer = AddUserSubscriptionSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            subscription_id = serializer.data["subscription"]
+            user = UserModel.objects.filter(
+                id=user_id).first()
+            if not user:
+                return Response(
+                    ResponseData.error(
+                        "User id is invalid"),
+                    status=status.HTTP_201_CREATED,
+                )
+            subscription = SubscriptionModel.objects.filter(
+                id=subscription_id).first()
+            if not subscription:
+                return Response(
+                    ResponseData.error(
+                        "Subscription id is invalid"),
+                    status=status.HTTP_201_CREATED,
+                )
+            new_subscription = UserSubscriptionDetailsModel.objects.create(
+                user=UserModel(id=user_id),
+                subscription=SubscriptionModel(id=subscription_id)
+            )
+            new_subscription.save()
+            return Response(
+                ResponseData.success_without_data(
+                    "Subscription done successfully"),
+                status=status.HTTP_201_CREATED,
+            )
+        for error in serializer.errors:
+            print(serializer.errors[error][0])
+        return Response(
+            ResponseData.error(serializer.errors[error][0]),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def getUserSubscriptionById(request):
+    """Function to get subscription based on user id"""
+    try:
+        data = request.data
+        serializer = GetUserSubscriptionSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            subscription_id = serializer.data["subscription"]
+            user = UserModel.objects.filter(
+                id=user_id).first()
+            if not user:
+                return Response(
+                    ResponseData.error(
+                        "User id is invalid"),
+                    status=status.HTTP_201_CREATED,
+                )
+            subscription = SubscriptionModel.objects.filter(
+                id=subscription_id).first()
+            if not subscription:
+                return Response(
+                    ResponseData.error(
+                        "Subscription id is invalid"),
+                    status=status.HTTP_201_CREATED,
+                )
+            subscription_data = UserSubscriptionDetailsModel.objects.values().filter(id=subscription_id,user=UserModel(id=user_id)).all()
+            for i in range(0,len(subscription_data)):
+                subscription_data[i].pop('created_at')
+                subscription_data[i].pop('updated_at')
+            return Response(
+                ResponseData.success(
+                    subscription_data, "Subscription fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        for error in serializer.errors:
+            print(serializer.errors[error][0])
+        return Response(
+            ResponseData.error(serializer.errors[error][0]),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def getAllSubscriptionsOfUser(request):
+    """Function to get all subscriptions of a user"""
+    try:
+        data = request.data
+        serializer = GetUserSubscriptionSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            user = UserModel.objects.filter(
+                id=user_id).first()
+            if not user:
+                return Response(
+                    ResponseData.error(
+                        "User id is invalid"),
+                    status=status.HTTP_201_CREATED,
+                )
+            subscription_data = UserSubscriptionDetailsModel.objects.values().filter(user=UserModel(id=user_id)).all()
+            for i in range(0,len(subscription_data)):
+                subscription_data[i].pop('created_at')
+                subscription_data[i].pop('updated_at')
+            return Response(
+                ResponseData.success(
+                    subscription_data, "Subscriptions fetched successfully"),
+                status=status.HTTP_201_CREATED)
         for error in serializer.errors:
             print(serializer.errors[error][0])
         return Response(

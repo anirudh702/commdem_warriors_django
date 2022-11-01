@@ -59,11 +59,12 @@ class GetCommitmentsSerializer(serializers.ModelSerializer):
 class UpdateCommitmentsSerializer(serializers.ModelSerializer):
     """Serializer for updating commitments"""
     id = serializers.IntegerField()
+    cause_id = serializers.CharField()
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = CommitmentModel
-        fields = ["user","id","is_done"]
+        fields = ["user","id","is_done","cause_id"]
 
 
 class AddCauseOfCategorySerializer(serializers.ModelSerializer):

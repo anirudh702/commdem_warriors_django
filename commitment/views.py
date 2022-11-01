@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from commitment import serializers
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ReasonBehindCommitmentSuccessOrFailureForUser
 from rest_framework.response import Response
 from commitment.serializers import AddCauseOfCategorySerializer, AddCommitmentSerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, UpdateCommitmentsSerializer
 from django.core.files.storage import FileSystemStorage
@@ -190,6 +190,7 @@ def get_cause_of_category_success_or_failure(request):
             cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.values().filter(
             category = CommitmentCategoryModel(id=category_id),is_success=is_success).all()
             for i in range(0,len(cause_of_category)):
+                cause_of_category[i]['isSelected'] = False
                 cause_of_category[i].pop('created_at')
                 cause_of_category[i].pop('updated_at')
             return Response(
@@ -358,6 +359,16 @@ def get_all_commitments(request):
                 commitment_data[i]['category_data'].pop('created_at')
                 commitment_data[i]['category_data'].pop('updated_at')
                 commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
+                    user=UserModel(id=user_id),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+                for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
                 commitment_data[i].pop('commitment_name_id')
                 commitment_data[i]['commitment_name_data'].pop('created_at')
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
@@ -414,6 +425,16 @@ def get_user_commitments(request):
                 commitment_data[i]['category_data'].pop('created_at')
                 commitment_data[i]['category_data'].pop('updated_at')
                 commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
+                    user=UserModel(id=user_id),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+                for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
                 commitment_data[i].pop('commitment_name_id')
                 commitment_data[i]['commitment_name_data'].pop('created_at')
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
@@ -446,14 +467,14 @@ def get_user_commitments_by_commitment_date_only(request):
         if serializer.is_valid():
             user_id = serializer.data["user"]
             commitment_date = serializer.data['commitment_date']
-            cache_key = ""     
-            cache_key = f"get_commitment_{str(commitment_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(commitment_date).split('T')[0]}_{user_id}"
-            data = cache.get(cache_key)
-            if data:
-               return Response(
-                ResponseData.success(
-                    data, "Commitments fetched successfully"),
-                status=status.HTTP_201_CREATED)
+            # cache_key = ""     
+            # cache_key = f"get_commitment_{str(commitment_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(commitment_date).split('T')[0]}_{user_id}"
+            # data = cache.get(cache_key)
+            # if data:
+            #    return Response(
+            #     ResponseData.success(
+            #         data, "Commitments fetched successfully"),
+            #     status=status.HTTP_201_CREATED)
             commitment_data = []
             commitment_data = list(
                 CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
@@ -472,6 +493,16 @@ def get_user_commitments_by_commitment_date_only(request):
                 commitment_data[i]['category_data'].pop('created_at')
                 commitment_data[i]['category_data'].pop('updated_at')
                 commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
+                    user=UserModel(id=user_id),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+                for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
                 commitment_data[i].pop('commitment_name_id')
                 commitment_data[i]['commitment_name_data'].pop('created_at')
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
@@ -484,7 +515,7 @@ def get_user_commitments_by_commitment_date_only(request):
                        ResponseData.success(
                            [], "No commitment found"),
                        status=status.HTTP_201_CREATED)
-            cache.set(cache_key, commitment_filtered_data)
+            # cache.set(cache_key, commitment_filtered_data,timeout=5)
             return Response(
                        ResponseData.success(
                            commitment_filtered_data, "Commitments fetched successfully"),
@@ -541,6 +572,16 @@ def get_user_commitments_by_start_end_date_only(request):
                 commitment_data[i]['category_data'].pop('created_at')
                 commitment_data[i]['category_data'].pop('updated_at')
                 commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
+                    user=UserModel(id=user_id),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+                for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
                 commitment_data[i].pop('commitment_name_id')
                 commitment_data[i]['commitment_name_data'].pop('created_at')
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
@@ -590,6 +631,7 @@ def update_commitment(request):
         if serializer.is_valid():
             user_id = serializer.data["user"]
             commitment_id = serializer.data['id']
+            cause_id = serializer.data['cause_id']
             is_done = serializer.data['is_done']
             commitment_data = CommitmentModel.objects.filter(
                 id=commitment_id,user=UserModel(id=user_id)
@@ -597,6 +639,23 @@ def update_commitment(request):
             commitment_data.is_done = is_done
             commitment_data.is_updated = True
             commitment_data.save()
+            cause_ids = str(cause_id).replace("[","").replace("]","").split(":")
+            print(f"cause_ids {cause_ids}")
+            for i in range(0,len(cause_ids)):
+                print(f"cause_ids[i] {cause_ids[i]}")
+                if cause_ids[i] != "":
+                   cause_id = CauseOfCategorySuccessOrFailureModel.objects.filter(id=int(cause_ids[i])).first()
+                   if not cause_id:
+                           return Response(
+                               ResponseData.error("Any one of the cause id is invalid"),
+                               status=status.HTTP_200_OK,
+                           )
+                   reasons = ReasonBehindCommitmentSuccessOrFailureForUser.objects.create(
+                       user = UserModel(id=user_id),
+                       commitment = CommitmentModel(id=commitment_id),
+                       cause_of_category_success_or_failure = CauseOfCategorySuccessOrFailureModel(id=int(cause_ids[i]))
+                   )
+                   reasons.save()
             return Response(
                 ResponseData.success_without_data("Commitment updated successfully"),
                 status=status.HTTP_201_CREATED)
@@ -608,3 +667,4 @@ def update_commitment(request):
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
