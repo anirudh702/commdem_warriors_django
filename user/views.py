@@ -137,12 +137,12 @@ def addNewPayment(request):
         if serializer.is_valid():
             user_id = serializer.data["user_id"]
             payment_id = serializer.data["payment_id"]
-            amount_in_dollars = serializer.data["amount_in_dollars"]
+            subscription_id = serializer.data["subscription"]
             date_of_payment = serializer.data['date_of_payment']
             new_payment_record = UserPaymentDetailsModel.objects.create(
                 user_id=UserModel(id=user_id),
                 payment_id=payment_id,
-                amount_in_dollars=amount_in_dollars,
+                subscription=SubscriptionModel(id=subscription_id),
                 date_of_payment=date_of_payment,
             )
             new_payment_record.save()

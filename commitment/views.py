@@ -59,7 +59,7 @@ def add_new_commitment(request):
                 )
             final_data.append(CommitmentModel(
                 user=UserModel(id=user_id),
-                # commitment_date=datetime.now() + timedelta(days=1),
+                # commitment_date=datetime.now() + timedelta(days=6),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
@@ -214,6 +214,9 @@ def add_new_commitment_name(request):
         serializer = AddCommitmentNameSerializer(data=data)
         if serializer.is_valid():
             name = serializer.data["name"]
+            success_name = serializer.data["successName"]
+            failure_name = serializer.data["failureName"]
+            current_day_name = serializer.data["currentDayName"]
             category_id = serializer.data['category']
             category = CommitmentCategoryModel.objects.filter(id=category_id).first()
             if not category:
@@ -223,6 +226,9 @@ def add_new_commitment_name(request):
                 )
             new_commitment_name = CommitmentNameModel.objects.create(
                 name=name,
+                successName=success_name,
+                failureName=failure_name,
+                currentDayName=current_day_name,
                 category=CommitmentCategoryModel(id=category_id)
             )
             new_commitment_name.save()
@@ -344,7 +350,7 @@ def get_all_commitments(request):
             #            status=status.HTTP_201_CREATED)
             commitment_data = []
             commitment_data = list(
-                CommitmentModel.objects.values().filter())
+                CommitmentModel.objects.values().filter().order_by('-commitment_date'))
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -410,7 +416,7 @@ def get_user_commitments(request):
             print("dvdvdf")
             commitment_data = []
             commitment_data = list(
-                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -477,7 +483,7 @@ def get_user_commitments_by_commitment_date_only(request):
             #     status=status.HTTP_201_CREATED)
             commitment_data = []
             commitment_data = list(
-                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -556,7 +562,7 @@ def get_user_commitments_by_start_end_date_only(request):
             #            status=status.HTTP_201_CREATED)
             commitment_data = []
             commitment_data = list(
-            CommitmentModel.objects.values().filter(user=UserModel(id=user_id)))
+            CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -642,20 +648,24 @@ def update_commitment(request):
             cause_ids = str(cause_id).replace("[","").replace("]","").split(":")
             print(f"cause_ids {cause_ids}")
             for i in range(0,len(cause_ids)):
-                print(f"cause_ids[i] {cause_ids[i]}")
                 if cause_ids[i] != "":
-                   cause_id = CauseOfCategorySuccessOrFailureModel.objects.filter(id=int(cause_ids[i])).first()
+                   new_ids = str(cause_ids[i]).replace(",","").strip()
+                   print(f"cause_ids[i] {new_ids}")
+                   cause_id = CauseOfCategorySuccessOrFailureModel.objects.filter(id=int(new_ids)).first()
                    if not cause_id:
                            return Response(
                                ResponseData.error("Any one of the cause id is invalid"),
                                status=status.HTTP_200_OK,
                            )
-                   reasons = ReasonBehindCommitmentSuccessOrFailureForUser.objects.create(
-                       user = UserModel(id=user_id),
-                       commitment = CommitmentModel(id=commitment_id),
-                       cause_of_category_success_or_failure = CauseOfCategorySuccessOrFailureModel(id=int(cause_ids[i]))
-                   )
-                   reasons.save()
+                   does_data_exists_or_not = ReasonBehindCommitmentSuccessOrFailureForUser.objects.filter(user=UserModel(id=user_id),
+                   cause_of_category_success_or_failure=CauseOfCategorySuccessOrFailureModel(id=new_ids)).first()
+                   if not does_data_exists_or_not:
+                       reasons = ReasonBehindCommitmentSuccessOrFailureForUser.objects.create(
+                           user = UserModel(id=user_id),
+                           commitment = CommitmentModel(id=commitment_id),
+                           cause_of_category_success_or_failure = CauseOfCategorySuccessOrFailureModel(id=int(new_ids))
+                       )
+                       reasons.save()
             return Response(
                 ResponseData.success_without_data("Commitment updated successfully"),
                 status=status.HTTP_201_CREATED)
