@@ -66,6 +66,13 @@ class UpdateCommitmentsSerializer(serializers.ModelSerializer):
         model = CommitmentModel
         fields = ["user","id","is_done","cause_id"]
 
+class GetOtherUsersCommitmentsSerializer(serializers.ModelSerializer):
+    """Serializer for getting commitments of other users"""
+
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = CommitmentModel
+        fields = ["user"]
 
 class AddCauseOfCategorySerializer(serializers.ModelSerializer):
     """Serializer for adding cause of category data success/failure"""

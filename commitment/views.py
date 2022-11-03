@@ -4,8 +4,9 @@ from rest_framework.decorators import api_view
 from commitment import serializers
 from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ReasonBehindCommitmentSuccessOrFailureForUser
 from rest_framework.response import Response
-from commitment.serializers import AddCauseOfCategorySerializer, AddCommitmentSerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, UpdateCommitmentsSerializer
+from commitment.serializers import AddCauseOfCategorySerializer, AddCommitmentSerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, GetOtherUsersCommitmentsSerializer, UpdateCommitmentsSerializer
 from django.core.files.storage import FileSystemStorage
+from firebase import send_to_firebase
 from response import Response as ResponseData
 from rest_framework import status
 from django.http.response import JsonResponse
@@ -59,7 +60,7 @@ def add_new_commitment(request):
                 )
             final_data.append(CommitmentModel(
                 user=UserModel(id=user_id),
-                # commitment_date=datetime.now() + timedelta(days=6),
+                commitment_date=datetime.now() + timedelta(days=0),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
@@ -99,6 +100,7 @@ def add_new_commitment_category(request):
         data = request.data
         serializer = AddCommitmentCategorySerializer(data=data)
         if serializer.is_valid():
+            # send_to_firebase()
             name = serializer.data["name"]
             new_commitment_category = CommitmentCategoryModel.objects.create(
                 name=name,
@@ -392,6 +394,148 @@ def get_all_commitments(request):
         )
 
 @api_view(["POST"])
+def get_other_users_commitments(request):
+    """Function to get other users commitments"""
+    try:
+        data = request.data
+        serializer = GetOtherUsersCommitmentsSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            cache_key = ""     
+            #        cache_key = "get_commitment_commitment_data" if user_id is None else f"get_commitment_commitment_data_{user_id}"
+            #        data = cache.get(cache_key)
+            #        if data:
+            #           return Response(
+            #            ResponseData.success(
+            #                data, "Commitments fetched successfully"),
+            #            status=status.HTTP_201_CREATED)
+            commitment_data = []
+            commitment_data = list(
+                CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            if len(commitment_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+            for i in range(0,len(commitment_data)):
+                commitment_data[i].pop('created_at')
+                commitment_data[i].pop('updated_at')
+                commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
+                commitment_data[i]['user_data'].pop('created_at')
+                commitment_data[i]['user_data'].pop('updated_at')
+                commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+                commitment_data[i].pop('category_id')
+                commitment_data[i]['category_data'].pop('created_at')
+                commitment_data[i]['category_data'].pop('updated_at')
+                commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
+                    user=UserModel(id=commitment_data[i]['user_id']),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+                commitment_data[i].pop('user_id')
+                for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
+                commitment_data[i].pop('commitment_name_id')
+                commitment_data[i]['commitment_name_data'].pop('created_at')
+                commitment_data[i]['commitment_name_data'].pop('updated_at')
+            return Response(
+                       ResponseData.success(
+                           commitment_data, "Commitments fetched successfully"),
+                       status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def get_group_commitments_by_commitment_date_only(request):
+    """Function to get group commitments based on commitment date only"""
+    try:
+        data = request.data
+        user = UserModel.objects.filter(id=request.data['user']).first()
+        if not user:
+                   return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+        serializer = GetCommitmentsSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            commitment_date = serializer.data['commitment_date']
+            # cache_key = ""     
+            # cache_key = f"get_commitment_{str(commitment_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(commitment_date).split('T')[0]}_{user_id}"
+            # data = cache.get(cache_key)
+            # if data:
+            #    return Response(
+            #     ResponseData.success(
+            #         data, "Commitments fetched successfully"),
+            #     status=status.HTTP_201_CREATED)
+            commitment_data = []
+            commitment_data = list(
+                CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            if len(commitment_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+            commitment_filtered_data = []
+            for i in range(0,len(commitment_data)):
+                commitment_data[i].pop('created_at')
+                commitment_data[i].pop('updated_at')
+                commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
+                commitment_data[i]['user_data'].pop('created_at')
+                commitment_data[i]['user_data'].pop('updated_at')
+                commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+                commitment_data[i].pop('category_id')
+                commitment_data[i]['category_data'].pop('created_at')
+                commitment_data[i]['category_data'].pop('updated_at')
+                commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
+                    user=UserModel(id=commitment_data[i]['user_id']),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+                commitment_data[i].pop('user_id')
+                for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
+                commitment_data[i].pop('commitment_name_id')
+                commitment_data[i]['commitment_name_data'].pop('created_at')
+                commitment_data[i]['commitment_name_data'].pop('updated_at')
+            # cache.set(cache_key, commitment_data)
+            for i in range(0,len(commitment_data)):
+                     if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
+                        commitment_filtered_data.append(commitment_data[i])
+            if len(commitment_filtered_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+            # cache.set(cache_key, commitment_filtered_data,timeout=5)
+            return Response(
+                       ResponseData.success(
+                           commitment_filtered_data, "Commitments fetched successfully"),
+                       status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
 def get_user_commitments(request):
     """Function to get user commitments"""
     try:
@@ -580,6 +724,90 @@ def get_user_commitments_by_start_end_date_only(request):
                 commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
                 commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
                     user=UserModel(id=user_id),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+                for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
+                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
+                commitment_data[i].pop('commitment_name_id')
+                commitment_data[i]['commitment_name_data'].pop('created_at')
+                commitment_data[i]['commitment_name_data'].pop('updated_at')
+            for i in range(0,len(commitment_data)):
+              sub_start_date = datetime.strptime(str(start_date).split("T")[0], "%Y-%m-%d").date()
+              sub_end_date = datetime.strptime(str(end_date).split("T")[0], "%Y-%m-%d").date()
+              current_date = datetime.strptime(str(commitment_data[i]['commitment_date']).split(" ")[0], "%Y-%m-%d").date()
+              if current_date >= sub_start_date and current_date <= sub_end_date:
+                 commitment_filtered_data.append(commitment_data[i])
+            if len(commitment_filtered_data) == 0:
+                return Response(
+                ResponseData.success(
+                    [], "No commitment found"),
+                status=status.HTTP_201_CREATED)
+            cache.set(cache_key, commitment_filtered_data)
+            return Response(
+                ResponseData.success(
+                    commitment_filtered_data, "Commitments fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def get_group_commitments_by_start_end_date_only(request):
+    """Function to get group commitments based on start and end date only"""
+    try:
+        data = request.data
+        user = UserModel.objects.filter(id=request.data['user']).first()
+        if not user:
+                   return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+        serializer = GetCommitmentsSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            start_date = serializer.data['start_date']
+            end_date = serializer.data['end_date']
+            cache_key = ""     
+            #        cache_key = f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}_{user_id}"
+            #        data = cache.get(cache_key)
+            #        print(f"data {data}")
+            #        if data:
+            #           return Response(
+            #            ResponseData.success(
+            #                data, "Commitments fetched successfully"),
+            #            status=status.HTTP_201_CREATED)
+            commitment_data = []
+            commitment_data = list(
+            CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            if len(commitment_data) == 0:
+                       return Response(
+                       ResponseData.success(
+                           [], "No commitment found"),
+                       status=status.HTTP_201_CREATED)
+            commitment_filtered_data = []
+            for i in range(0,len(commitment_data)):
+                commitment_data[i].pop('created_at')
+                commitment_data[i].pop('updated_at')
+                commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
+                commitment_data[i]['user_data'].pop('created_at')
+                commitment_data[i]['user_data'].pop('updated_at')
+                commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+                commitment_data[i].pop('category_id')
+                commitment_data[i]['category_data'].pop('created_at')
+                commitment_data[i]['category_data'].pop('updated_at')
+                commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
+                    user=UserModel(id=commitment_data[i]['user_id']),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+                commitment_data[i].pop('user_id')
                 for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
                     commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
                     commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
