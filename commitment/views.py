@@ -6,6 +6,7 @@ from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentMo
 from rest_framework.response import Response
 from commitment.serializers import AddCauseOfCategorySerializer, AddCommitmentSerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, GetOtherUsersCommitmentsSerializer, UpdateCommitmentsSerializer
 from django.core.files.storage import FileSystemStorage
+from designation.models import DesignationModel
 from firebase import send_to_firebase
 from response import Response as ResponseData
 from rest_framework import status
@@ -48,16 +49,16 @@ def add_new_commitment(request):
                 )
             commitment_category_data = CommitmentModel.objects.filter(user=UserModel(id=user_id),category_id=category_id).all()
             print(f"commitment_category_data {commitment_category_data}")
-            already_exists = False
-            for i in range(0,len(commitment_category_data)):
-                if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=1)).split(' ')[0]) or str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now()).split(' ')[0]):
-                    already_exists = True
-                    break
-            if already_exists:
-                return Response(
-                    ResponseData.error("Commitment already exists with same category for day specified"),
-                    status=status.HTTP_200_OK,
-                )
+            # already_exists = False
+            # for i in range(0,len(commitment_category_data)):
+            #     if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=1)).split(' ')[0]) or str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now()).split(' ')[0]):
+            #         already_exists = True
+            #         break
+            # if already_exists:
+            #     return Response(
+            #         ResponseData.error("Commitment already exists with same category for day specified"),
+            #         status=status.HTTP_200_OK,
+            #     )
             final_data.append(CommitmentModel(
                 user=UserModel(id=user_id),
                 commitment_date=datetime.now() + timedelta(days=0),
@@ -421,6 +422,10 @@ def get_other_users_commitments(request):
                 commitment_data[i].pop('created_at')
                 commitment_data[i].pop('updated_at')
                 commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
+                commitment_data[i]['user_data']['designation_data'] = DesignationModel.objects.values().filter(id=commitment_data[i]['user_data']['designation_id']).get()
+                commitment_data[i]['user_data']['designation_data'].pop('created_at')
+                commitment_data[i]['user_data']['designation_data'].pop('updated_at')
+                commitment_data[i]['user_data'].pop('designation_id')
                 commitment_data[i]['user_data'].pop('created_at')
                 commitment_data[i]['user_data'].pop('updated_at')
                 commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
@@ -491,6 +496,10 @@ def get_group_commitments_by_commitment_date_only(request):
                 commitment_data[i].pop('created_at')
                 commitment_data[i].pop('updated_at')
                 commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
+                commitment_data[i]['user_data']['designation_data'] = DesignationModel.objects.values().filter(id=commitment_data[i]['user_data']['designation_id']).get()
+                commitment_data[i]['user_data']['designation_data'].pop('created_at')
+                commitment_data[i]['user_data']['designation_data'].pop('updated_at')
+                commitment_data[i]['user_data'].pop('designation_id')
                 commitment_data[i]['user_data'].pop('created_at')
                 commitment_data[i]['user_data'].pop('updated_at')
                 commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
@@ -798,6 +807,10 @@ def get_group_commitments_by_start_end_date_only(request):
                 commitment_data[i].pop('created_at')
                 commitment_data[i].pop('updated_at')
                 commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
+                commitment_data[i]['user_data']['designation_data'] = DesignationModel.objects.values().filter(id=commitment_data[i]['user_data']['designation_id']).get()
+                commitment_data[i]['user_data']['designation_data'].pop('created_at')
+                commitment_data[i]['user_data']['designation_data'].pop('updated_at')
+                commitment_data[i]['user_data'].pop('designation_id')
                 commitment_data[i]['user_data'].pop('created_at')
                 commitment_data[i]['user_data'].pop('updated_at')
                 commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()

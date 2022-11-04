@@ -13,11 +13,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='SubscriptionModel',
+            name='DesignationModel',
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('amount_in_dollars', models.BigIntegerField()),
-                ('duration_in_months', models.CharField(max_length=100, unique=True)),
+                ('title', models.CharField(max_length=100, unique=True)),
                 ('created_at', models.DateTimeField(blank=True, default=django.utils.timezone.now)),
                 ('updated_at', models.DateTimeField(blank=True, default=django.utils.timezone.now)),
             ],

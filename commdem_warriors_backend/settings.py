@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'user',
     'commitment',
     'rest_framework',
-    'subscription'
+    'subscription',
+    'designation'
 ]
 
 MIDDLEWARE = [

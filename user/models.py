@@ -1,6 +1,7 @@
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 import django
+from designation.models import DesignationModel
 
 from subscription.models import SubscriptionModel
 
@@ -14,7 +15,8 @@ class UserModel(models.Model):
     profile_pic = models.FileField(blank=True)
     password = models.CharField(max_length=50,null=False)
     age = models.BigIntegerField()
-    designation = models.CharField(max_length=50,null=False)
+    designation_title = models.CharField(max_length=50,null=False,blank=False,default="")
+    designation = models.ForeignKey(DesignationModel, on_delete=models.CASCADE,null=True)
     is_medicine_ongoing = models.BooleanField(default=False)
     any_health_issues = models.BooleanField(default=False)
     is_subscribed = models.BooleanField(default=False)

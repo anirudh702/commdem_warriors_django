@@ -21,4 +21,5 @@ urlpatterns = [
     path('user_app/', include("user.urls")),
     path('commitment_app/', include("commitment.urls")),
     path('subscription_app/', include("subscription.urls")),
+    path('designation_app/', include("designation.urls")),
 ]

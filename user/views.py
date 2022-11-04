@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
+from designation.models import DesignationModel
 from subscription.models import SubscriptionModel
 from user.models import UserModel, UserPaymentDetailsModel, UserSubscriptionDetailsModel
 from rest_framework.response import Response
@@ -22,6 +23,7 @@ def signup(request):
             password = serializer.data["password"]
             mobile_number = serializer.data['mobile_number']
             age = serializer.data['age']
+            designation_title = serializer.data['designation_title']
             designation = serializer.data['designation']
             is_medicine_ongoing = serializer.data['is_medicine_ongoing']
             any_health_issues = serializer.data['any_health_issues']
@@ -36,7 +38,8 @@ def signup(request):
                 profile_pic= "" if profile_pic == "" else f"static/{profile_pic}",
                 password=password,
                 age=age,
-                designation=designation,
+                designation_title=designation_title,
+                designation=DesignationModel(id=designation),
                 is_medicine_ongoing=is_medicine_ongoing,
                 any_health_issues=any_health_issues
             )
