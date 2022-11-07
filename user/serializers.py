@@ -56,3 +56,11 @@ class UserSubscribedOrNotSerializer(serializers.ModelSerializer):
         """Meta class to change behaviour of model fields"""
         model = UserModel
         fields = ['id']
+
+class GetAllUsersDetailsSerializer(serializers.ModelSerializer):
+    """Serializer for getting details of all users"""
+    id = serializers.IntegerField(default=None)
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserModel
+        fields = ['id']

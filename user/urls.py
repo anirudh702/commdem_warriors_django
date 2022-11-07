@@ -13,5 +13,6 @@ urlpatterns = [
     path('addPayment/', views.addNewPayment, name="addPayment"),   
     path('addNewSubscription/', views.addNewSubscription, name="addNewSubscription"),   
     path('getUserSubscriptionById/', views.getUserSubscriptionById, name="getUserSubscriptionById"),   
-    path('getAllSubscriptionsOfUser/', views.getAllSubscriptionsOfUser, name="getAllSubscriptionsOfUser"),   
+    path('getUserSubscriptionById/', views.getUserSubscriptionById, name="getUserSubscriptionById"),   
+    path('getAllUsersDetails/', views.getAllUsersDetails, name="getAllUsersDetails"),
 ]

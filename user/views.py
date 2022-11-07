@@ -1,10 +1,11 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
+from commitment.models import CommitmentCategoryModel, CommitmentModel
 from designation.models import DesignationModel
 from subscription.models import SubscriptionModel
 from user.models import UserModel, UserPaymentDetailsModel, UserSubscriptionDetailsModel
 from rest_framework.response import Response
-from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetUserSubscriptionSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
+from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetAllUsersDetailsSerializer, GetUserSubscriptionSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -285,6 +286,58 @@ def getAllSubscriptionsOfUser(request):
             return Response(
                 ResponseData.success(
                     subscription_data, "Subscriptions fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        for error in serializer.errors:
+            print(serializer.errors[error][0])
+        return Response(
+            ResponseData.error(serializer.errors[error][0]),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
+def getAllUsersDetails(request):
+    """Function to get details of all users"""
+    try:
+        data = request.data
+        serializer = GetAllUsersDetailsSerializer(data=data)
+        if serializer.is_valid():
+            users_data = UserModel.objects.values().filter().order_by('-joining_date').all()
+            total_categories = CommitmentCategoryModel.objects.values().filter().all()
+            for i in range(0,len(users_data)):
+                commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id'])).all()
+                done_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = True,is_updated = True).all()
+                notDone_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = False,is_updated = True).all()
+                notUpdated_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = False,is_updated = False).all()
+                users_data[i]['commitments_details'] = {}
+                users_data[i]['commitments_details']['total_commitments'] = len(commitments_data)
+                users_data[i]['commitments_details']['total_commitments_done'] = len(done_commitments_data)
+                users_data[i]['commitments_details']['total_commitments_not_done'] = len(notDone_commitments_data)
+                users_data[i]['commitments_details']['total_commitments_not_updated'] = len(notUpdated_commitments_data)
+                users_data[i]['commitments_details']['category_wise'] = []
+                for j in range(0,len(total_categories)):
+                    data = {}
+                    commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
+                    done_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
+                    notDone_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
+                    notUpdated_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
+                    data['category_name'] = total_categories[j]['name']
+                    data['total_commitments'] = len(commitments_data)
+                    data['total_commitments_done'] = len(done_commitments_data)
+                    data['total_commitments_not_done'] = len(notDone_commitments_data)
+                    data['total_commitments_not_updated'] = len(notUpdated_commitments_data)
+                    users_data[i]['commitments_details']['category_wise'].append(data)
+                users_data[i].pop('created_at')
+                users_data[i].pop('updated_at')
+                users_data[i].pop('designation_id')
+            users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments'],reverse=True)
+            return Response(
+                ResponseData.success(
+                    users_data, "User Details fetched successfully"),
                 status=status.HTTP_201_CREATED)
         for error in serializer.errors:
             print(serializer.errors[error][0])
