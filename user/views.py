@@ -10,6 +10,7 @@ from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
 from django.http.response import JsonResponse
+from datetime import *
 
 # Create your views here.
 @api_view(["POST"])
@@ -303,48 +304,128 @@ def getAllSubscriptionsOfUser(request):
 def getAllUsersDetails(request):
     """Function to get details of all users"""
     try:
-        data = request.data
-        serializer = GetAllUsersDetailsSerializer(data=data)
-        if serializer.is_valid():
-            users_data = UserModel.objects.values().filter().order_by('-joining_date').all()
+        request_data = request.data
+        if(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == ""):
+           users_data = UserModel.objects.values().filter().order_by('-joining_date').all()
+        elif(request_data['sortBy'] == "Age (max to min)" and request_data['filterByDesignation'] == ""):
+           users_data = UserModel.objects.values().filter().order_by('-age').all()
+        elif(request_data['sortBy'] == "Age (min to max)" and request_data['filterByDesignation'] == ""):
+           users_data = UserModel.objects.values().filter().order_by('age').all()
+        elif(request_data['sortBy'] == "Age (max to min)" and request_data['filterByDesignation'] != ""):
+           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).order_by('-age').all()
+        elif(request_data['sortBy'] == "Age (min to max)" and request_data['filterByDesignation'] != ""):
+           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).order_by('age').all()
+        elif(request_data['filterByDesignation'] != ""):
+           print(f"ccsd {request_data['filterByDesignation']}")
+           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).all()
+        else:
+           users_data = UserModel.objects.values().filter().all()
+        if(request_data['filterByCategory']) != "" : 
+            total_categories = CommitmentCategoryModel.objects.values().filter(name=request_data['filterByCategory']).all()
+        else:
             total_categories = CommitmentCategoryModel.objects.values().filter().all()
-            for i in range(0,len(users_data)):
-                commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id'])).all()
-                done_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = True,is_updated = True).all()
-                notDone_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = False,is_updated = True).all()
-                notUpdated_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = False,is_updated = False).all()
-                users_data[i]['commitments_details'] = {}
-                users_data[i]['commitments_details']['total_commitments'] = len(commitments_data)
-                users_data[i]['commitments_details']['total_commitments_done'] = len(done_commitments_data)
-                users_data[i]['commitments_details']['total_commitments_not_done'] = len(notDone_commitments_data)
-                users_data[i]['commitments_details']['total_commitments_not_updated'] = len(notUpdated_commitments_data)
-                users_data[i]['commitments_details']['category_wise'] = []
-                for j in range(0,len(total_categories)):
-                    data = {}
-                    commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
-                    done_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
-                    notDone_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
-                    notUpdated_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
-                    data['category_name'] = total_categories[j]['name']
-                    data['total_commitments'] = len(commitments_data)
-                    data['total_commitments_done'] = len(done_commitments_data)
-                    data['total_commitments_not_done'] = len(notDone_commitments_data)
-                    data['total_commitments_not_updated'] = len(notUpdated_commitments_data)
-                    users_data[i]['commitments_details']['category_wise'].append(data)
-                users_data[i].pop('created_at')
-                users_data[i].pop('updated_at')
-                users_data[i].pop('designation_id')
-            users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments'],reverse=True)
-            return Response(
-                ResponseData.success(
-                    users_data, "User Details fetched successfully"),
-                status=status.HTTP_201_CREATED)
-        for error in serializer.errors:
-            print(serializer.errors[error][0])
+        for i in range(0,len(users_data)):
+            if(len(total_categories) > 1):     
+                 commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id'])).all()
+                 done_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = True,is_updated = True).all()
+                 notDone_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = False,is_updated = True).all()
+                 notUpdated_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = False,is_updated = False).all()
+                 users_data[i]['commitments_details'] = {}
+                 users_data[i]['commitments_details']['total_commitments'] = len(commitments_data)
+                 users_data[i]['commitments_details']['total_commitments_done'] = len(done_commitments_data)
+                 users_data[i]['commitments_details']['total_commitments_not_done'] = len(notDone_commitments_data)
+                 users_data[i]['commitments_details']['total_commitments_not_updated'] = len(notUpdated_commitments_data)
+                 users_data[i]['commitments_details']['category_wise'] = []
+            for j in range(0,len(total_categories)):
+                data = {}
+                commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
+                done_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
+                notDone_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
+                notUpdated_commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
+                if(len(total_categories) == 1):
+                    users_data[i]['commitments_details'] = {}
+                    users_data[i]['commitments_details']['total_commitments'] = len(commitments_data)
+                    users_data[i]['commitments_details']['total_commitments_done'] = len(done_commitments_data)
+                    users_data[i]['commitments_details']['total_commitments_not_done'] = len(notDone_commitments_data)
+                    users_data[i]['commitments_details']['total_commitments_not_updated'] = len(notUpdated_commitments_data)
+                    users_data[i]['commitments_details']['category_wise'] = []
+                data['category_name'] = total_categories[j]['name']
+                data['total_commitments'] = len(commitments_data)
+                data['total_commitments_done'] = len(done_commitments_data)
+                data['total_commitments_not_done'] = len(notDone_commitments_data)
+                data['total_commitments_not_updated'] = len(notUpdated_commitments_data)
+                users_data[i]['commitments_details']['category_wise'].append(data)
+            users_data[i].pop('created_at')
+            users_data[i].pop('updated_at')
+            # users_data[i].pop('designation_id')
+        print(f"dfvfd {request_data['sortBy']}")
+        if(request_data['sortBy'] == 'Commitment done (min to max)'):
+            users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'])
+        elif(request_data['sortBy'] == 'Commitment done (max to min)'):
+            users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'],reverse=True)
+        final_data = []
+        for i in range(0,len(users_data)):
+            print(f"ddcdcd {users_data[i]['commitments_details']['total_commitments']}")
+            if(users_data[i]['commitments_details']['total_commitments']!=0):
+                final_data.append(users_data[i])
+        if(len(final_data) == 0):
+          return Response(
+            ResponseData.success(
+                final_data, "No Data Found"),
+            status=status.HTTP_201_CREATED)
         return Response(
-            ResponseData.error(serializer.errors[error][0]),
-            status=status.HTTP_400_BAD_REQUEST,
+            ResponseData.success(
+                final_data, "User Details fetched successfully"),
+            status=status.HTTP_201_CREATED)
+
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+@api_view(["POST"])
+def getOverallPerformerOfTheWeek(request):
+    """Function to get overall performer of the week"""
+    try:
+        users_data = UserModel.objects.values().filter().all()
+        today = datetime.now()
+        start = today - timedelta(days=today.weekday())
+        end = start + timedelta(days=6)
+        sub_start_date = datetime.strptime(str(start).split(" ")[0], "%Y-%m-%d").date()
+        sub_end_date = datetime.strptime(str(end).split(" ")[0], "%Y-%m-%d").date()
+        final_data = []
+        for i in range(0,len(users_data)):
+            max_done_commitments = {
+            "user_id" : "",
+            "max_commitments" : 0
+        }
+            users_data[i]['commitments'] = []
+            max_done_commitments['user_id'] = users_data[i]['id']
+            commitment_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id']),is_done = True,is_updated = True).all()
+            value = 0
+            for j in range(0,len(commitment_data)):
+                current_date = datetime.strptime(str(commitment_data[j]['commitment_date']).split(" ")[0], "%Y-%m-%d").date()
+                if current_date >= sub_start_date and current_date <= sub_end_date:
+                    value+=1
+                    users_data[i]['commitments'].append(commitment_data[j])
+            max_done_commitments['max_commitments'] = value
+            final_data.append(max_done_commitments)
+        newlist = sorted(final_data, key=lambda d: d['max_commitments'],reverse=True)
+        user_ids = []
+        user_ids.append(newlist[0]['user_id'])
+        for j in range(1,len(newlist)):
+                if(str(newlist[j]['max_commitments']) == str(newlist[0]['max_commitments'])):
+                    user_ids.append(newlist[j]['user_id'])
+        if(len(user_ids) == 0):
+          return Response(
+            ResponseData.success(
+                [], "No Data Found"),
+            status=status.HTTP_201_CREATED)
+        return Response(
+            ResponseData.success(
+                user_ids, "User Details fetched successfully"),
+            status=status.HTTP_201_CREATED)
+
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR

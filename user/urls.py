@@ -15,4 +15,5 @@ urlpatterns = [
     path('getUserSubscriptionById/', views.getUserSubscriptionById, name="getUserSubscriptionById"),   
     path('getUserSubscriptionById/', views.getUserSubscriptionById, name="getUserSubscriptionById"),   
     path('getAllUsersDetails/', views.getAllUsersDetails, name="getAllUsersDetails"),
+ path('getOverallPerformerOfTheWeek/', views.getOverallPerformerOfTheWeek, name="getOverallPerformerOfTheWeek"),   
 ]
