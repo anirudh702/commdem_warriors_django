@@ -9,8 +9,8 @@ from subscription.models import SubscriptionModel
 class UserModel(models.Model):
     """Model for user data"""
     id = models.AutoField(primary_key=True)
-    first_name = models.CharField(max_length=100,blank=False,unique=True)
-    last_name = models.CharField(max_length=100,blank=False,unique=True)
+    first_name = models.CharField(max_length=100,blank=False)
+    last_name = models.CharField(max_length=100,blank=False)
     mobile_number = PhoneNumberField(null=False, blank=False)
     profile_pic = models.FileField(blank=True)
     password = models.CharField(max_length=50,null=False)

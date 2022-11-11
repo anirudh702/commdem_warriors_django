@@ -11,7 +11,7 @@ from firebase import send_to_firebase
 from response import Response as ResponseData
 from rest_framework import status
 from django.http.response import JsonResponse
-
+from django.core.paginator import Paginator
 from user.models import UserModel
 from django.core.cache import cache
 
@@ -49,19 +49,19 @@ def add_new_commitment(request):
                 )
             commitment_category_data = CommitmentModel.objects.filter(user=UserModel(id=user_id),category_id=category_id).all()
             print(f"commitment_category_data {commitment_category_data}")
-            # already_exists = False
-            # for i in range(0,len(commitment_category_data)):
-            #     if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=1)).split(' ')[0]) or str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now()).split(' ')[0]):
-            #         already_exists = True
-            #         break
-            # if already_exists:
-            #     return Response(
-            #         ResponseData.error("Commitment already exists with same category for day specified"),
-            #         status=status.HTTP_200_OK,
-            #     )
+            already_exists = False
+            for i in range(0,len(commitment_category_data)):
+                if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=1)).split(' ')[0]) or str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now()).split(' ')[0]):
+                    already_exists = True
+                    break
+            if already_exists:
+                return Response(
+                    ResponseData.error("Commitment already exists with same category for day specified"),
+                    status=status.HTTP_201_CREATED,
+                )
             final_data.append(CommitmentModel(
                 user=UserModel(id=user_id),
-                commitment_date=datetime.now() + timedelta(days=0),
+                commitment_date=datetime.now() - timedelta(days=0),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
@@ -402,6 +402,8 @@ def get_other_users_commitments(request):
         serializer = GetOtherUsersCommitmentsSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user"]
+            # page_number = serializer.data['page_no']
+            # page_size_param = serializer.data['page_size']
             cache_key = ""     
             #        cache_key = "get_commitment_commitment_data" if user_id is None else f"get_commitment_commitment_data_{user_id}"
             #        data = cache.get(cache_key)
@@ -411,8 +413,15 @@ def get_other_users_commitments(request):
             #                data, "Commitments fetched successfully"),
             #            status=status.HTTP_201_CREATED)
             commitment_data = []
-            commitment_data = list(
-                CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            # commitment_data = list(CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            # page_no = page_number
+            # page_size = page_size_param
+            # i=(page_no-1)*page_size
+            # j=page_no*page_size
+            commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))
+            # paginator = Paginator(commitment_data, 10)
+            # page_obj = paginator.page(1)
+            # commitment_data = page_obj
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -484,8 +493,9 @@ def get_group_commitments_by_commitment_date_only(request):
             #         data, "Commitments fetched successfully"),
             #     status=status.HTTP_201_CREATED)
             commitment_data = []
-            commitment_data = list(
-                CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            # commitment_data = list(
+            #     CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -795,8 +805,9 @@ def get_group_commitments_by_start_end_date_only(request):
             #                data, "Commitments fetched successfully"),
             #            status=status.HTTP_201_CREATED)
             commitment_data = []
-            commitment_data = list(
-            CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            # commitment_data = list(
+            # CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(

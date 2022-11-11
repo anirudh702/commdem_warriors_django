@@ -68,11 +68,13 @@ class UpdateCommitmentsSerializer(serializers.ModelSerializer):
 
 class GetOtherUsersCommitmentsSerializer(serializers.ModelSerializer):
     """Serializer for getting commitments of other users"""
+    page_no = serializers.IntegerField(default=None)
+    page_size = serializers.IntegerField(default=None)
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = CommitmentModel
-        fields = ["user"]
+        fields = ["user","page_no","page_size"]
 
 class AddCauseOfCategorySerializer(serializers.ModelSerializer):
     """Serializer for adding cause of category data success/failure"""
