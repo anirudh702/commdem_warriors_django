@@ -8,12 +8,12 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 
 # Use a service account.
-cred = credentials.Certificate('/Users/anirudh.chawla/Downloads/commdemwarriors-firebase-adminsdk-adstw-d344ebfefd.json')
+# cred = credentials.Certificate('/Users/anirudh.chawla/Downloads/commdemwarriors-firebase-adminsdk-adstw-d344ebfefd.json')
 
-firebase_admin.initialize_app(cred, 
-{
-"databaseURL": "commdemwarriors.firebaseio.com/"
-})
+# firebase_admin.initialize_app(cred, 
+# {
+# "databaseURL": "commdemwarriors.firebaseio.com/"
+# })
 
 
 def main():

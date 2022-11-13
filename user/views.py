@@ -427,8 +427,18 @@ def getOverallPerformerOfTheWeek(request):
             max_done_commitments['max_commitments'] = value
             final_data.append(max_done_commitments)
         newlist = sorted(final_data, key=lambda d: d['max_commitments'],reverse=True)
-        print(f"newlist {newlist}")
+        tempList = []
+        for i in range(0,len(newlist)):
+            if(newlist[i]['max_commitments'] > 0):
+                tempList.append(newlist[i])
+        newlist = tempList
         user_ids = []
+        print(f"newlist dcs {newlist}")
+        if(len(newlist) == 0):
+          return Response(
+            ResponseData.success(
+                [], "No user found"),
+            status=status.HTTP_201_CREATED)
         user_ids.append(newlist[0]['user_id'])
         for j in range(1,len(newlist)):
                 if(str(newlist[j]['max_commitments']) == str(newlist[0]['max_commitments'])):
@@ -550,6 +560,18 @@ def getOverallPerformerOfTheWeekCategoryWise(request):
                 max_done_commitments['max_commitments'] = value
                 final_data.append(max_done_commitments)
             newlist = sorted(final_data, key=lambda d: d['max_commitments'],reverse=True)
+            tempList = []
+            for i in range(0,len(newlist)):
+                if(newlist[i]['max_commitments'] > 0):
+                    tempList.append(newlist[i])
+            newlist = tempList
+            user_ids = []
+            print(f"newlist dcs {newlist}")
+            if(len(newlist) == 0):
+              return Response(
+                ResponseData.success(
+                    [], "No user found"),
+                status=status.HTTP_201_CREATED)
             user_ids = []
             user_ids.append(newlist[0]['user_id'])
             for j in range(1,len(newlist)):
