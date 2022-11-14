@@ -19,6 +19,14 @@ class UserSignUpSerializer(serializers.ModelSerializer):
         password_validation.validate_password(value, self.instance)
         return value
 
+class GetUserProfileSerializer(serializers.ModelSerializer):
+    """Serializer for User sign up details"""
+    id = serializers.IntegerField()
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserModel
+        fields = ["id"]
+
 class UserSignInSerializer(serializers.ModelSerializer):
     """Serializer for User sign in details"""
     username = serializers.CharField()

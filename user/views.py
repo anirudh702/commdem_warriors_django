@@ -5,7 +5,7 @@ from designation.models import DesignationModel
 from subscription.models import SubscriptionModel
 from user.models import UserModel, UserPaymentDetailsModel, UserSubscriptionDetailsModel
 from rest_framework.response import Response
-from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetAllUsersDetailsSerializer, GetUserSubscriptionSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
+from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetAllUsersDetailsSerializer, GetUserProfileSerializer, GetUserSubscriptionSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -685,7 +685,6 @@ def updateProfile(request):
                userdata.is_medicine_ongoing = is_medicine_ongoing
                userdata.any_health_issues = any_health_issues
                userdata.is_subscribed = is_subscribed
-               
                userdata.save()
                print("true")
             else:
@@ -723,4 +722,36 @@ def updateProfile(request):
         return Response(
             ResponseData.error(str(exception)),
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(["POST"])
+def getUserProfileDetails(request):
+    """Function to get user profile details based on user id"""
+    try:
+        data = request.data
+        serializer = GetUserProfileSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["id"]
+            user = UserModel.objects.filter(
+                id=user_id).first()
+            if not user:
+                return Response(
+                    ResponseData.error(
+                        "User id is invalid"),
+                    status=status.HTTP_201_CREATED,
+                )
+            user_details = UserModel.objects.values().filter(id=user_id).all()
+            user_details[0].pop('created_at')
+            user_details[0].pop('updated_at')
+            return Response(
+                ResponseData.success(
+                    user_details, " User details fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
