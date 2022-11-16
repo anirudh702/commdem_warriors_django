@@ -50,11 +50,14 @@ class GetCommitmentsSerializer(serializers.ModelSerializer):
     commitment_date = serializers.CharField(default=None)
     start_date = serializers.CharField(default=None)
     end_date = serializers.CharField(default=None)
+    search_param = serializers.CharField(default=None)
+    page_no = serializers.IntegerField(default=None)
+    page_size = serializers.IntegerField(default=None)
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = CommitmentModel
-        fields = ["user","commitment_date",'start_date','end_date']
+        fields = ["user","commitment_date",'start_date','end_date','page_no','page_size','search_param']
         
 class UpdateCommitmentsSerializer(serializers.ModelSerializer):
     """Serializer for updating commitments"""

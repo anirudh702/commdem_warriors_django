@@ -8,7 +8,7 @@ from django.contrib.auth import password_validation
 
 class UserSignUpSerializer(serializers.ModelSerializer):
     """Serializer for User sign up details"""
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(default=None)
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = UserModel

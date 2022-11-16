@@ -398,72 +398,87 @@ def get_all_commitments(request):
 def get_other_users_commitments(request):
     """Function to get other users commitments"""
     try:
-        data = request.data
-        serializer = GetOtherUsersCommitmentsSerializer(data=data)
-        if serializer.is_valid():
-            user_id = serializer.data["user"]
-            # page_number = serializer.data['page_no']
-            # page_size_param = serializer.data['page_size']
-            cache_key = ""     
-            #        cache_key = "get_commitment_commitment_data" if user_id is None else f"get_commitment_commitment_data_{user_id}"
-            #        data = cache.get(cache_key)
-            #        if data:
-            #           return Response(
-            #            ResponseData.success(
-            #                data, "Commitments fetched successfully"),
-            #            status=status.HTTP_201_CREATED)
-            commitment_data = []
-            # commitment_data = list(CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
-            # page_no = page_number
-            # page_size = page_size_param
-            # i=(page_no-1)*page_size
-            # j=page_no*page_size
+        # serializer = GetOtherUsersCommitmentsSerializer(data=data)
+        request_data = request.data
+        print(f"request_data {request_data}")
+        page_number = int(request_data['page_no'] if 'page_no' in request.data else 0)
+        page_size_param = int(request_data['page_size'] if 'page_size' in request.data else 0)
+        search_param = request_data['search_param'] if 'search_param' in request.data else ""
+        page_no = page_number
+        page_size = page_size_param
+        start=(page_no-1)*page_size
+        end=page_no*page_size
+        print(start)
+        print(end)
+        # page_number = serializer.data['page_no']
+        # page_size_param = serializer.data['page_size']
+        cache_key = ""     
+        #        cache_key = "get_commitment_commitment_data" if user_id is None else f"get_commitment_commitment_data_{user_id}"
+        #        data = cache.get(cache_key)
+        #        if data:
+        #           return Response(
+        #            ResponseData.success(
+        #                data, "Commitments fetched successfully"),
+        #            status=status.HTTP_201_CREATED)
+        commitment_data = []
+        # commitment_data = list(CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+        # page_no = page_number
+        # page_size = page_size_param
+        # i=(page_no-1)*page_size
+        # j=page_no*page_size
+        if page_number == 0:
             commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))
-            # paginator = Paginator(commitment_data, 10)
-            # page_obj = paginator.page(1)
-            # commitment_data = page_obj
-            if len(commitment_data) == 0:
-                       return Response(
-                       ResponseData.success(
-                           [], "No commitment found"),
-                       status=status.HTTP_201_CREATED)
-            for i in range(0,len(commitment_data)):
-                commitment_data[i].pop('created_at')
-                commitment_data[i].pop('updated_at')
-                commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
-                commitment_data[i]['user_data']['designation_data'] = DesignationModel.objects.values().filter(id=commitment_data[i]['user_data']['designation_id']).get()
-                commitment_data[i]['user_data']['designation_data'].pop('created_at')
-                commitment_data[i]['user_data']['designation_data'].pop('updated_at')
-                commitment_data[i]['user_data'].pop('designation_id')
-                commitment_data[i]['user_data'].pop('created_at')
-                commitment_data[i]['user_data'].pop('updated_at')
-                commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
-                commitment_data[i].pop('category_id')
-                commitment_data[i]['category_data'].pop('created_at')
-                commitment_data[i]['category_data'].pop('updated_at')
-                commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
-                commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
-                    user=UserModel(id=commitment_data[i]['user_id']),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
-                commitment_data[i].pop('user_id')
-                for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
-                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
-                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
-                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
-                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
-                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
-                    commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
-                    commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
-                commitment_data[i].pop('commitment_name_id')
-                commitment_data[i]['commitment_name_data'].pop('created_at')
-                commitment_data[i]['commitment_name_data'].pop('updated_at')
-            return Response(
-                       ResponseData.success(
-                           commitment_data, "Commitments fetched successfully"),
-                       status=status.HTTP_201_CREATED)
+        else:
+            commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))[start:end]
+        # paginator = Paginator(commitment_data, 10)
+        # page_obj = paginator.page(1)
+        # commitment_data = page_obj
+        if len(commitment_data) == 0:
+                   return Response(
+                   ResponseData.success(
+                       [], "No commitment found"),
+                   status=status.HTTP_201_CREATED)
+        for i in range(0,len(commitment_data)):
+            commitment_data[i].pop('created_at')
+            commitment_data[i].pop('updated_at')
+            commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).get()
+            commitment_data[i]['user_data']['designation_data'] = DesignationModel.objects.values().filter(id=commitment_data[i]['user_data']['designation_id']).get()
+            commitment_data[i]['user_data']['designation_data'].pop('created_at')
+            commitment_data[i]['user_data']['designation_data'].pop('updated_at')
+            commitment_data[i]['user_data'].pop('designation_id')
+            commitment_data[i]['user_data'].pop('created_at')
+            commitment_data[i]['user_data'].pop('updated_at')
+            commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+            commitment_data[i].pop('category_id')
+            commitment_data[i]['category_data'].pop('created_at')
+            commitment_data[i]['category_data'].pop('updated_at')
+            commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+            commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
+                user=UserModel(id=commitment_data[i]['user_id']),commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
+            commitment_data[i].pop('user_id')
+            for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
+                commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
+                commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
+                commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('created_at')
+                commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'].pop('updated_at')
+                commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
+            commitment_data[i].pop('commitment_name_id')
+            commitment_data[i]['commitment_name_data'].pop('created_at')
+            commitment_data[i]['commitment_name_data'].pop('updated_at')
+        if search_param != "":
+           new_commitment_data = []
+           for i in range(0,len(commitment_data)):
+               if(str(commitment_data[i]['user_data']['first_name']).lower().__contains__(str(search_param).lower()) or
+                str(commitment_data[i]['user_data']['last_name']).lower().__contains__(str(search_param).lower())
+               or str(commitment_data[i]['user_data']['mobile_number']).__contains__(search_param) or str(commitment_data[i]['category_data']['name']).__contains__(str(search_param).lower())):
+                 new_commitment_data.append(commitment_data[i])
+           commitment_data = new_commitment_data[start:end]
         return Response(
-                    ResponseData.error(serializer.errors),
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                   ResponseData.success(
+                       commitment_data, "Commitments fetched successfully"),
+                   status=status.HTTP_201_CREATED)
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -484,6 +499,15 @@ def get_group_commitments_by_commitment_date_only(request):
         if serializer.is_valid():
             user_id = serializer.data["user"]
             commitment_date = serializer.data['commitment_date']
+            page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
+            page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
+            search_param = serializer.data['search_param'] if 'search_param' in request.data else ""
+            page_no = page_number
+            page_size = page_size_param
+            start=(page_no-1)*page_size
+            end=page_no*page_size
+            print(start)
+            print(end)
             # cache_key = ""     
             # cache_key = f"get_commitment_{str(commitment_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(commitment_date).split('T')[0]}_{user_id}"
             # data = cache.get(cache_key)
@@ -495,7 +519,10 @@ def get_group_commitments_by_commitment_date_only(request):
             commitment_data = []
             # commitment_data = list(
             #     CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
-            commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))
+            if page_number == 0:
+               commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))
+            else:
+               commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))[start:end]
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -535,6 +562,14 @@ def get_group_commitments_by_commitment_date_only(request):
             for i in range(0,len(commitment_data)):
                      if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
                         commitment_filtered_data.append(commitment_data[i])
+            if search_param != "":
+               new_commitment_data = []
+               for i in range(0,len(commitment_filtered_data)):
+                   if(str(commitment_filtered_data[i]['user_data']['first_name']).lower().__contains__(str(search_param).lower()) or
+                str(commitment_filtered_data[i]['user_data']['last_name']).lower().__contains__(str(search_param).lower())
+               or str(commitment_filtered_data[i]['user_data']['mobile_number']).__contains__(search_param) or str(commitment_filtered_data[i]['category_data']['name']).__contains__(str(search_param).lower())):
+                      new_commitment_data.append(commitment_data[i])
+               commitment_filtered_data = new_commitment_data[start:end]
             if len(commitment_filtered_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -795,7 +830,16 @@ def get_group_commitments_by_start_end_date_only(request):
             user_id = serializer.data["user"]
             start_date = serializer.data['start_date']
             end_date = serializer.data['end_date']
-            cache_key = ""     
+            cache_key = ""    
+            page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
+            page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
+            search_param = serializer.data['search_param'] if 'search_param' in request.data else ""
+            page_no = page_number
+            page_size = page_size_param
+            start=(page_no-1)*page_size
+            end=page_no*page_size
+            print(start)
+            print(end) 
             #        cache_key = f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}_{user_id}"
             #        data = cache.get(cache_key)
             #        print(f"data {data}")
@@ -806,8 +850,11 @@ def get_group_commitments_by_start_end_date_only(request):
             #            status=status.HTTP_201_CREATED)
             commitment_data = []
             # commitment_data = list(
-            # CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
-            commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))
+            #     CommitmentModel.objects.values().exclude(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            if page_number == 0:
+               commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))
+            else:
+               commitment_data = list(CommitmentModel.objects.values().filter().order_by('-commitment_date'))[start:end]
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -849,6 +896,14 @@ def get_group_commitments_by_start_end_date_only(request):
               current_date = datetime.strptime(str(commitment_data[i]['commitment_date']).split(" ")[0], "%Y-%m-%d").date()
               if current_date >= sub_start_date and current_date <= sub_end_date:
                  commitment_filtered_data.append(commitment_data[i])
+            if search_param != "":
+               new_commitment_data = []
+               for i in range(0,len(commitment_filtered_data)):
+                   if(str(commitment_filtered_data[i]['user_data']['first_name']).lower().__contains__(str(search_param).lower()) or
+                str(commitment_filtered_data[i]['user_data']['last_name']).lower().__contains__(str(search_param).lower())
+               or str(commitment_filtered_data[i]['user_data']['mobile_number']).__contains__(search_param) or str(commitment_filtered_data[i]['category_data']['name']).__contains__(str(search_param).lower())):
+                      new_commitment_data.append(commitment_filtered_data[i])
+               commitment_filtered_data = new_commitment_data[start:end]
             if len(commitment_filtered_data) == 0:
                 return Response(
                 ResponseData.success(

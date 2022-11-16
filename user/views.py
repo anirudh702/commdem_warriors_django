@@ -313,33 +313,45 @@ def getAllUsersDetails(request):
     """Function to get details of all users"""
     try:
         request_data = request.data
-        # page_number = int(request_data['page_no'])
-        # page_size_param = int(request_data['page_size'])
-        # page_no = page_number
-        # page_size = page_size_param
-        # i=(page_no-1)*page_size
-        # j=page_no*page_size
-        # print(i)
-        # print(j)
-        if(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == ""):
+        page_number = int(request_data['page_no'])
+        page_size_param = int(request_data['page_size'])
+        search_param = request_data['search_param'] if 'search_param' in request.data else ""
+        page_no = page_number
+        page_size = page_size_param
+        start=(page_no-1)*page_size
+        end=page_no*page_size
+        print(start)
+        print(end)
+        print(f"request_data {request_data}")
+        if(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == "" and search_param == ""):
            users_data = UserModel.objects.values().filter().order_by('-joining_date').all()
+        #    users_data = UserModel.objects.values().filter().order_by('-joining_date').all()[start:end]
         elif(request_data['sortBy'] == "Age (max to min)" and request_data['filterByDesignation'] == ""):
-           users_data = UserModel.objects.values().filter().order_by('-age').all()
+           users_data = UserModel.objects.values().filter().order_by('-age').all()[start:end]
         elif(request_data['sortBy'] == "Age (min to max)" and request_data['filterByDesignation'] == ""):
-           users_data = UserModel.objects.values().filter().order_by('age').all()
+           users_data = UserModel.objects.values().filter().order_by('age').all()[start:end]
         elif(request_data['sortBy'] == "Age (max to min)" and request_data['filterByDesignation'] != ""):
-           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).order_by('-age').all()
+           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).order_by('-age').all()[start:end]
         elif(request_data['sortBy'] == "Age (min to max)" and request_data['filterByDesignation'] != ""):
-           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).order_by('age').all()
+           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).order_by('age').all()[start:end]
         elif(request_data['filterByDesignation'] != ""):
            print(f"ccsd {request_data['filterByDesignation']}")
-           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).all()
+           users_data = UserModel.objects.values().filter(designation = DesignationModel(id=request_data['filterByDesignation'])).all()[start:end]
         else:
            users_data = UserModel.objects.values().filter().all()
         if(request_data['filterByCategory']) != "" : 
             total_categories = CommitmentCategoryModel.objects.values().filter(name=request_data['filterByCategory']).all()
         else:
             total_categories = CommitmentCategoryModel.objects.values().filter().all()
+        print(f"users_data length {len(users_data)}")
+        if search_param != "":
+           new_user_data = []
+           for i in range(0,len(users_data)):
+               if(str(users_data[i]['first_name']).lower().__contains__(str(search_param).lower()) or str(users_data[i]['last_name']).lower().__contains__(str(search_param).lower())
+               or str(users_data[i]['mobile_number']).__contains__(search_param) or str(users_data[i]['age']).__contains__(search_param)):
+                 new_user_data.append(users_data[i])
+           users_data = new_user_data[start:end]
+        print(f"users_data length after search {len(users_data)}")
         for i in range(0,len(users_data)):
             if(len(total_categories) > 1):     
                  commitments_data = CommitmentModel.objects.values().filter(user = UserModel(id=users_data[i]['id'])).all()
@@ -376,14 +388,15 @@ def getAllUsersDetails(request):
             # users_data[i].pop('designation_id')
         print(f"dfvfd {request_data['sortBy']}")
         if(request_data['sortBy'] == 'Commitment done (min to max)'):
-            users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'])
+            users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'])[start:end]
         elif(request_data['sortBy'] == 'Commitment done (max to min)'):
-            users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'],reverse=True)
+            users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'],reverse=True)[start:end]
         final_data = []
         for i in range(0,len(users_data)):
             print(f"ddcdcd {users_data[i]['commitments_details']['total_commitments']}")
             if(users_data[i]['commitments_details']['total_commitments']!=0):
                 final_data.append(users_data[i])
+        print(f"final_data length {len(final_data)}")
         if(len(final_data) == 0):
           return Response(
             ResponseData.success(
@@ -661,7 +674,6 @@ def updateProfile(request):
             is_medicine_ongoing = serializer.data["is_medicine_ongoing"]
             any_health_issues = serializer.data["any_health_issues"]
             is_subscribed = serializer.data["is_subscribed"]
-            profile_pic = request.FILES['profile_pic'] if 'profile_pic' in request.FILES else ""
             userdata = UserModel.objects.filter(
                 id=user_id
             ).first()
@@ -689,7 +701,7 @@ def updateProfile(request):
                print("true")
             else:
                userdata.first_name=first_name
-               userdata.profile_pic = f"static/{request.FILES['profile_pic']}"
+            #    userdata.profile_pic = f"static/{request.FILES['profile_pic']}"
                userdata.last_name=last_name
                userdata.mobile_number = mobile_number
                userdata.password = password
@@ -707,7 +719,7 @@ def updateProfile(request):
             )
             return Response(
                 ResponseData.success(
-                    updated_date[0], "User profile updated successfully"),
+                    updated_date[0]['id'], "User profile updated successfully"),
                 status=status.HTTP_201_CREATED,
             )
         print("serializer.errors")
