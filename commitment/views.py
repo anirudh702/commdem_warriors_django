@@ -603,18 +603,29 @@ def get_user_commitments(request):
         serializer = GetCommitmentsSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user"]
-            cache_key = ""     
-            cache_key = "get_commitment_data" if user_id is None else f"get_commitment_data_{user_id}"
-            data = cache.get(cache_key)
-            if data:
-               return Response(
-                ResponseData.success(
-                    data, "Commitments fetched successfully"),
-                status=status.HTTP_201_CREATED)
-            print("dvdvdf")
+            # cache_key = ""     
+            # cache_key = "get_commitment_data" if user_id is None else f"get_commitment_data_{user_id}"
+            # data = cache.get(cache_key)
+            page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
+            page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
+            search_param = serializer.data['search_param'] if 'search_param' in request.data else ""
+            page_no = page_number
+            page_size = page_size_param
+            start=(page_no-1)*page_size
+            end=page_no*page_size
+            print(start)
+            print(end)
+            # if data:
+            #    return Response(
+            #     ResponseData.success(
+            #         data, "Commitments fetched successfully"),
+            #     status=status.HTTP_201_CREATED)
             commitment_data = []
-            commitment_data = list(
+            if page_number == 0:
+               commitment_data = list(
                 CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            else:
+               commitment_data = list(CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))[start:end]
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -642,7 +653,15 @@ def get_user_commitments(request):
                 commitment_data[i].pop('commitment_name_id')
                 commitment_data[i]['commitment_name_data'].pop('created_at')
                 commitment_data[i]['commitment_name_data'].pop('updated_at')
-            cache.set(cache_key, commitment_data,timeout=10)
+            print(search_param)
+            if search_param != "":
+               print("search called")
+               new_commitment_data = []
+               for i in range(0,len(commitment_data)):
+                   if(str(commitment_data[i]['category_data']['name']).lower().__contains__(str(search_param).lower())):
+                     new_commitment_data.append(commitment_data[i])
+               commitment_data = new_commitment_data[start:end]
+            # cache.set(cache_key, commitment_data,timeout=10)
             return Response(
                        ResponseData.success(
                            commitment_data, "Commitments fetched successfully"),
@@ -671,6 +690,15 @@ def get_user_commitments_by_commitment_date_only(request):
         if serializer.is_valid():
             user_id = serializer.data["user"]
             commitment_date = serializer.data['commitment_date']
+            page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
+            page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
+            search_param = serializer.data['search_param'] if 'search_param' in request.data else ""
+            page_no = page_number
+            page_size = page_size_param
+            start=(page_no-1)*page_size
+            end=page_no*page_size
+            print(start)
+            print(end)
             # cache_key = ""     
             # cache_key = f"get_commitment_{str(commitment_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(commitment_date).split('T')[0]}_{user_id}"
             # data = cache.get(cache_key)
@@ -680,8 +708,11 @@ def get_user_commitments_by_commitment_date_only(request):
             #         data, "Commitments fetched successfully"),
             #     status=status.HTTP_201_CREATED)
             commitment_data = []
-            commitment_data = list(
+            if page_number == 0:
+               commitment_data = list(
                 CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            else:
+               commitment_data = list(CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))[start:end]
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -714,6 +745,13 @@ def get_user_commitments_by_commitment_date_only(request):
             for i in range(0,len(commitment_data)):
                      if str(commitment_data[i]['commitment_date']).split(" ")[0] == str(commitment_date).split("T")[0]:
                         commitment_filtered_data.append(commitment_data[i])
+            
+            if search_param != "":
+               new_commitment_data = []
+               for i in range(0,len(commitment_filtered_data)):
+                   if(str(commitment_filtered_data[i]['category_data']['name']).lower().__contains__(str(search_param).lower())):
+                      new_commitment_data.append(commitment_filtered_data[i])
+               commitment_filtered_data = new_commitment_data[start:end]
             if len(commitment_filtered_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -749,7 +787,16 @@ def get_user_commitments_by_start_end_date_only(request):
             user_id = serializer.data["user"]
             start_date = serializer.data['start_date']
             end_date = serializer.data['end_date']
-            cache_key = ""     
+            cache_key = "" 
+            page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
+            page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
+            search_param = serializer.data['search_param'] if 'search_param' in request.data else ""
+            page_no = page_number
+            page_size = page_size_param
+            start=(page_no-1)*page_size
+            end=page_no*page_size
+            print(start)
+            print(end)     
             #        cache_key = f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}" if user_id is None else f"get_commitment_{str(start_date).split('T')[0]}_{str(start_date).split('T')[0]}_{user_id}"
             #        data = cache.get(cache_key)
             #        print(f"data {data}")
@@ -759,8 +806,11 @@ def get_user_commitments_by_start_end_date_only(request):
             #                data, "Commitments fetched successfully"),
             #            status=status.HTTP_201_CREATED)
             commitment_data = []
-            commitment_data = list(
-            CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            if page_number == 0:
+               commitment_data = list(
+                CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))
+            else:
+               commitment_data = list(CommitmentModel.objects.values().filter(user=UserModel(id=user_id)).order_by('-commitment_date'))[start:end]
             if len(commitment_data) == 0:
                        return Response(
                        ResponseData.success(
@@ -795,6 +845,12 @@ def get_user_commitments_by_start_end_date_only(request):
               current_date = datetime.strptime(str(commitment_data[i]['commitment_date']).split(" ")[0], "%Y-%m-%d").date()
               if current_date >= sub_start_date and current_date <= sub_end_date:
                  commitment_filtered_data.append(commitment_data[i])
+            if search_param != "":
+               new_commitment_data = []
+               for i in range(0,len(commitment_filtered_data)):
+                   if(str(commitment_filtered_data[i]['category_data']['name']).lower().__contains__(str(search_param).lower())):
+                      new_commitment_data.append(commitment_filtered_data[i])
+               commitment_filtered_data = new_commitment_data[start:end]
             if len(commitment_filtered_data) == 0:
                 return Response(
                 ResponseData.success(
