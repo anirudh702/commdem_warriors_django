@@ -793,6 +793,11 @@ COPY public.commitment_commitmentmodel (id, commitment_date, is_done, is_updated
 54	2022-11-16 15:21:38.687208+05:30	f	f	2022-11-16 15:21:38.687313+05:30	2022-11-16 15:21:38.687316+05:30	3	3	4
 53	2022-11-16 15:21:38.681776+05:30	t	t	2022-11-16 15:21:38.681893+05:30	2022-11-16 15:21:38.681896+05:30	2	2	4
 52	2022-11-16 15:21:38.671037+05:30	t	t	2022-11-16 15:21:38.671203+05:30	2022-11-16 15:21:38.671206+05:30	1	1	4
+55	2022-11-17 15:31:43.206626+05:30	f	t	2022-11-17 15:31:43.207526+05:30	2022-11-17 15:31:43.207545+05:30	2	2	4
+56	2022-11-17 15:31:43.224052+05:30	t	t	2022-11-17 15:31:43.224621+05:30	2022-11-17 15:31:43.22467+05:30	3	3	4
+58	2022-11-17 18:14:17.667903+05:30	t	t	2022-11-17 18:14:17.668236+05:30	2022-11-17 18:14:17.668254+05:30	3	3	3
+57	2022-11-17 18:14:17.652062+05:30	f	t	2022-11-17 18:14:17.652796+05:30	2022-11-17 18:14:17.65286+05:30	2	2	3
+59	2022-11-17 18:16:22.675707+05:30	t	t	2022-11-17 18:16:22.67583+05:30	2022-11-17 18:16:22.675833+05:30	1	1	3
 49	2022-11-16 15:16:51.242137+05:30	t	t	2022-11-16 15:16:51.242589+05:30	2022-11-16 15:16:51.242598+05:30	1	1	10
 \.
 
@@ -817,6 +822,11 @@ COPY public.commitment_reasonbehindcommitmentsuccessorfailureforuser (id, create
 35	2022-11-16 15:21:45.52476+05:30	2022-11-16 15:21:45.524807+05:30	3	53	4
 36	2022-11-16 15:21:45.549888+05:30	2022-11-16 15:21:45.54992+05:30	6	53	4
 37	2022-11-16 15:21:54.133229+05:30	2022-11-16 15:21:54.133301+05:30	1	52	4
+38	2022-11-17 15:31:47.145404+05:30	2022-11-17 15:31:47.145413+05:30	5	55	4
+39	2022-11-17 15:31:51.017959+05:30	2022-11-17 15:31:51.017975+05:30	9	56	4
+40	2022-11-17 18:14:21.853519+05:30	2022-11-17 18:14:21.853533+05:30	9	58	3
+41	2022-11-17 18:14:25.412947+05:30	2022-11-17 18:14:25.412956+05:30	5	57	3
+42	2022-11-17 18:16:26.819481+05:30	2022-11-17 18:16:26.819485+05:30	1	59	3
 33	2022-11-16 15:17:01.265375+05:30	2022-11-16 15:17:01.265381+05:30	1	49	10
 \.
 
@@ -1038,7 +1048,7 @@ SELECT pg_catalog.setval('public.commitment_commitmentgraphdatamodel_id_seq', 1,
 -- Name: commitment_commitmentmodel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.commitment_commitmentmodel_id_seq', 54, true);
+SELECT pg_catalog.setval('public.commitment_commitmentmodel_id_seq', 59, true);
 
 
 --
@@ -1052,7 +1062,7 @@ SELECT pg_catalog.setval('public.commitment_commitmentnamemodel_id_seq', 3, true
 -- Name: commitment_reasonbehindcommitmentsuccessorfailureforuser_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.commitment_reasonbehindcommitmentsuccessorfailureforuser_id_seq', 37, true);
+SELECT pg_catalog.setval('public.commitment_reasonbehindcommitmentsuccessorfailureforuser_id_seq', 42, true);
 
 
 --
