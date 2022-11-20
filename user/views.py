@@ -323,8 +323,10 @@ def getAllUsersDetails(request):
         print(start)
         print(end)
         print(f"request_data {request_data}")
-        if(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == "" and search_param == ""):
+        if(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == "" and search_param == "" ):
            users_data = UserModel.objects.values().filter().order_by('-joining_date').all()
+        # elif(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == "" and search_param == "" ):
+        #    users_data = UserModel.objects.values().filter().order_by('-joining_date').all()[start:end]
         #    users_data = UserModel.objects.values().filter().order_by('-joining_date').all()[start:end]
         elif(request_data['sortBy'] == "Age (max to min)" and request_data['filterByDesignation'] == ""):
            users_data = UserModel.objects.values().filter().order_by('-age').all()[start:end]
@@ -397,6 +399,9 @@ def getAllUsersDetails(request):
             if(users_data[i]['commitments_details']['total_commitments']!=0):
                 final_data.append(users_data[i])
         print(f"final_data length {len(final_data)}")
+        if(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == "" and search_param == "" ):
+            final_data = final_data[start:end]
+        print(f"final_data length adter pagination {len(final_data)}")
         if(len(final_data) == 0):
           return Response(
             ResponseData.success(
