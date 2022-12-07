@@ -1,6 +1,5 @@
 """Serializer for user module"""
 
-from dataclasses import fields
 from rest_framework import serializers
 
 from subscription.models import SubscriptionModel
@@ -17,7 +16,8 @@ class AddSubscriptionSerializer(serializers.ModelSerializer):
 class GetSubscriptionSerializer(serializers.ModelSerializer):
     """Serializer for get subscription details"""
     id = serializers.IntegerField(default=None)
+    user_id = serializers.IntegerField(default=None)
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = SubscriptionModel
-        fields = ["id"]
+        fields = ["id","user_id"]

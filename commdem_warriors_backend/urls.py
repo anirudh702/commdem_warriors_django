@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
+from graphene_django.views import GraphQLView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -22,4 +23,10 @@ urlpatterns = [
     path('commitment_app/', include("commitment.urls")),
     path('subscription_app/', include("subscription.urls")),
     path('designation_app/', include("designation.urls")),
+    path('cities_app/', include("cities.urls")),
+    path('income_app/', include("income.urls")),
+    path('notifications_app/', include("notifications.urls")),
+    path('referral_code_app/', include("referralCode.urls")),
+    path('location_app/', include("location.urls")),
+    path("graphql", GraphQLView.as_view(graphiql=True)),
 ]

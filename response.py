@@ -16,6 +16,13 @@ class Response:
         return {"success": True, "data": data, "message": message}
 
     @classmethod
+    def success_for_referral_code(cls, message,referralCode):
+        """
+        Common success method for API response
+        """
+        return {"success": True,"referral_code" : referralCode, "message": message}
+
+    @classmethod
     def success_without_data(cls, message):
         """
         Common success_without_data method for API response
@@ -30,8 +37,8 @@ class Response:
         return {"success": False, "message": error}
 
     @classmethod
-    def user_subscribed(cls, message,is_subscribed):
+    def user_subscribed(cls, message,is_subscribed,is_admin):
         """
         Common error method for API response
         """
-        return {"success": True, "message": message, "is_subscribed" : is_subscribed}
+        return {"success": True, "message": message, "is_subscribed" : is_subscribed,'is_admin' : is_admin}

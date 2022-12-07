@@ -42,7 +42,14 @@ INSTALLED_APPS = [
     'commitment',
     'rest_framework',
     'subscription',
-    'designation'
+    'designation',
+    'cities',
+    'income',
+    'redeemPoints',
+    'referralCode',
+    'notifications',
+    'location',
+    'graphene_django'
 ]
 
 MIDDLEWARE = [
@@ -79,10 +86,105 @@ WSGI_APPLICATION = 'commdem_warriors_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+DATABASE_ROUTERS = [
+    'commitment.commitmentRouter.CommitmentRouter',
+    'cities.citiesRouter.CitiesRouter',
+    'designation.designationRouter.DesignationRouter',
+    'income.incomeRouter.IncomeRouter',
+    'location.locationRouter.LocationRouter',
+    'redeemPoints.redeemPointsRouter.RedeemPointsRouter',
+    'referralCode.referralCodeRouter.ReferralCodeRouter',
+    'subscription.subscriptionRouter.SubscriptionRouter',
+    'user.userRouter.UserRouter',
+    ]
+DATABASE_APPS_MAPPING = {
+    'commitment': 'commitment_db',
+    'designation':'designation_db',
+    'income':'income_db',
+    'location':'location_db',
+    'notifications':'notifications_db',
+    'redeemPoints':'redeemPoints_db',
+    'referralCode':'referralCode_db',
+    'subscription':'subscription_db',
+    'user':'user_db',
+    }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'commdem_warriors',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'commitment_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'commitment',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'designation_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'designation',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'income_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'income',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'location_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'location',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'notifications_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'notifications',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'redeemPoints_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'redeemPoints',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'referralCode_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'referralCode',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'subscription_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'subscription',
+        'USER': 'postgres',
+        'PASSWORD': '123',
+        'HOST': '',
+        'PORT': '',
+    },
+    'user_db': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'user',
         'USER': 'postgres',
         'PASSWORD': '123',
         'HOST': '',
@@ -135,16 +237,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CACHE_HOST='127.0.0.1'
 CACHE_PORT=11211
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": "redis://127.0.0.1:6379/1",
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#         }
-#     }
-# }
-CACHE_TTL = 60 * 1
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+CACHE_TTL = 10
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+TIME_ZONE =  'Asia/Kolkata'
+
+GRAPHENE = {
+  'SCHEMA': 'graph.schema.schema'
+  }

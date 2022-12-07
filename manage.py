@@ -3,9 +3,9 @@
 import os
 import sys
 from uuid import uuid4
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+
+
+# FIREBASE_APP = initialize_app()
 
 # Use a service account.
 # cred = credentials.Certificate('/Users/anirudh.chawla/Downloads/commdemwarriors-firebase-adminsdk-adstw-d344ebfefd.json')
@@ -32,3 +32,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

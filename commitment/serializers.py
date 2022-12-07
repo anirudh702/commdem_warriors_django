@@ -48,6 +48,7 @@ class GetCommitmentNameSerializer(serializers.ModelSerializer):
 class GetCommitmentsSerializer(serializers.ModelSerializer):
     """Serializer for getting commitments"""
     commitment_date = serializers.CharField(default=None)
+    title_message = serializers.CharField(default=None)
     start_date = serializers.CharField(default=None)
     end_date = serializers.CharField(default=None)
     search_param = serializers.CharField(default=None)
@@ -57,7 +58,7 @@ class GetCommitmentsSerializer(serializers.ModelSerializer):
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = CommitmentModel
-        fields = ["user","commitment_date",'start_date','end_date','page_no','page_size','search_param']
+        fields = ["user_id","commitment_date",'start_date','end_date','page_no','page_size','search_param','title_message']
         
 class UpdateCommitmentsSerializer(serializers.ModelSerializer):
     """Serializer for updating commitments"""
@@ -67,7 +68,7 @@ class UpdateCommitmentsSerializer(serializers.ModelSerializer):
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = CommitmentModel
-        fields = ["user","id","is_done","cause_id"]
+        fields = ["user_id","id","is_done","cause_id"]
 
 class GetOtherUsersCommitmentsSerializer(serializers.ModelSerializer):
     """Serializer for getting commitments of other users"""
@@ -77,7 +78,7 @@ class GetOtherUsersCommitmentsSerializer(serializers.ModelSerializer):
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = CommitmentModel
-        fields = ["user","page_no","page_size"]
+        fields = ["user_id","page_no","page_size"]
 
 class AddCauseOfCategorySerializer(serializers.ModelSerializer):
     """Serializer for adding cause of category data success/failure"""
