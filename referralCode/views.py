@@ -27,7 +27,7 @@ def get_referral_code_of_user(request):
             #            ResponseData.error("User id is invalid"),
             #            status=status.HTTP_200_OK,
             #        )
-            data = ReferralCodeModel.objects.using('referralCode_db').values().filter().all()
+            data = ReferralCodeModel.objects.values().filter().all()
             print(f"data {data}")
             for i in range(0,data.count()):
                 data[i].pop('created_at')
@@ -53,7 +53,7 @@ def delete_referral_code_of_user(request):
         serializer = GetReferralCodeSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user_id"]
-            is_id_valid = UserModel.objects.using('user_db').filter(id=user_id).first()
+            is_id_valid = UserModel.objects.filter(id=user_id).first()
             # if not is_id_valid:
             #        return Response(
             #            ResponseData.error("User id is invalid"),

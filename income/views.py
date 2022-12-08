@@ -11,8 +11,8 @@ def add_new_income_range(request):
     try:
         data = request.data
         final_data = []
-        for i in range(0,data.count):
-            data_exist_or_not = IncomeModel.objects.using('income_db').filter(income_range=data[i]).first()
+        for i in range(0,len(data)):
+            data_exist_or_not = IncomeModel.objects.filter(income_range=data[i]).first()
             if data_exist_or_not:
                 return Response(
                     ResponseData.error("Data already exists"),
@@ -21,7 +21,7 @@ def add_new_income_range(request):
             final_data.append(IncomeModel(
                 income_range=data[i]
                 ))
-        IncomeModel.objects.using('income_db').bulk_create(final_data)
+        IncomeModel.objects.bulk_create(final_data)
         return Response(
             ResponseData.success(
                 [], "Income range details added successfully"),
@@ -36,7 +36,7 @@ def add_new_income_range(request):
 def get_all_income_range(request):
     """Function to get all income range details"""
     try:
-        income_range_data = IncomeModel.objects.using('income_db').values().filter().all()
+        income_range_data = IncomeModel.objects.values().filter().all()
         for i in range(0,income_range_data.count()):
             income_range_data[i].pop('created_at')
             income_range_data[i].pop('updated_at')

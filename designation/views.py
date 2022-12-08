@@ -15,14 +15,14 @@ def addNewDesignation(request):
         serializer = AddDesignationSerializer(data=data)
         if serializer.is_valid():
             title = str(serializer.data["title"]).lower()
-            designation_exists = DesignationModel.objects.using('designation_db').filter(title=str(title).lower()).first()
+            designation_exists = DesignationModel.objects.filter(title=str(title).lower()).first()
             if designation_exists:
                 return Response(
                     ResponseData.error(
                         "This designation already exists"),
                     status=status.HTTP_201_CREATED,
                 )
-            new_designation = DesignationModel.objects.using('designation_db').create(
+            new_designation = DesignationModel.objects.create(
                 title=title
             )
             new_designation.save()
@@ -49,7 +49,7 @@ def getAllDeisgnations(request):
         data = request.data
         serializer = GetAllDesignationSerializer(data=data)
         if serializer.is_valid():
-            designation_data = DesignationModel.objects.using('designation_db').values().filter().all()
+            designation_data = DesignationModel.objects.values().filter().all()
             for i in range(0,designation_data.count()):
                 designation_data[i].pop('created_at')
                 designation_data[i].pop('updated_at')

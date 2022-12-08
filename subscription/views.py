@@ -20,20 +20,20 @@ def add_subscription(request):
             duration = serializer.data['duration']
             is_free_trial = serializer.data['is_free_trial']
             designation_id = serializer.data['designation_id']
-            is_id_valid = DesignationModel.objects.using('designation_db').filter(id=designation_id).first()
+            is_id_valid = DesignationModel.objects.filter(id=designation_id).first()
             if not is_id_valid:
                    return Response(
                        ResponseData.error("This designation id does not exists"),
                        status=status.HTTP_200_OK,
                    )
-            data_exists = SubscriptionModel.objects.using('subscription_db').filter(
+            data_exists = SubscriptionModel.objects.filter(
                 amount = amount,duration=duration,designation_id=is_id_valid.id).first()
             if data_exists:
                    return Response(
                        ResponseData.error("Subscription with these details already exists"),
                        status=status.HTTP_200_OK,
                    )
-            new_subscription = SubscriptionModel.objects.using('subscription_db').create(
+            new_subscription = SubscriptionModel.objects.create(
                 amount = amount,
                 duration = duration,
                 is_free_trial = is_free_trial,
@@ -64,13 +64,13 @@ def get_subscription_by_id(request):
         serializer = GetSubscriptionSerializer(data=data)
         if serializer.is_valid():
             subscription_id = serializer.data["id"]
-            is_id_valid = SubscriptionModel.objects.using('subscription_db').filter(id=subscription_id).first()
+            is_id_valid = SubscriptionModel.objects.filter(id=subscription_id).first()
             if not is_id_valid:
                    return Response(
                        ResponseData.error("Subscription id is invalid"),
                        status=status.HTTP_200_OK,
                    )
-            subscription_data = SubscriptionModel.objects.using('subscription_db').values().filter(id = subscription_id).all()
+            subscription_data = SubscriptionModel.objects.values().filter(id = subscription_id).all()
             for i in range(0,subscription_data.count()):
                 subscription_data[i].pop('created_at')
                 subscription_data[i].pop('updated_at')
@@ -96,14 +96,14 @@ def get_all_subscriptions(request):
         serializer = GetSubscriptionSerializer(data=data)
         if serializer.is_valid():
                 user_id = serializer.data['user_id']
-                is_user_id_valid = UserProfessionalDetailsModel.objects.using('user_db').filter(user_id=user_id).first()
+                is_user_id_valid = UserProfessionalDetailsModel.objects.filter(user_id=user_id).first()
                 if not is_user_id_valid:
                    return Response(
                        ResponseData.error("This user does not exists"),
                        status=status.HTTP_200_OK,
                    )
                 subscription_details = list(
-                SubscriptionModel.objects.using('subscription_db').values().filter(
+                SubscriptionModel.objects.values().filter(
                     designation_id=is_user_id_valid.designation_id
                 ))
                 for i in range(0,len(subscription_details)):
@@ -131,7 +131,7 @@ def get_past_subscriptions_of_user(request):
         serializer = GetSubscriptionSerializer(data=data)
         if serializer.is_valid():
                 user_id = serializer.data['user_id']
-                payment_details = list(UserPaymentDetailsModel.objects.using('user_db').values().filter(user_id=user_id,is_active=True))
+                payment_details = list(UserPaymentDetailsModel.objects.values().filter(user_id=user_id,is_active=True))
                 if len(payment_details) == 0:
                    return Response(
                        ResponseData.error("No subscriptions found"),
@@ -141,7 +141,7 @@ def get_past_subscriptions_of_user(request):
                 print("called")
                 for i in range(0,len(payment_details)):
                     print(payment_details[i]['subscription_id'])
-                    subscription_details = list(SubscriptionModel.objects.using('subscription_db').values().filter(
+                    subscription_details = list(SubscriptionModel.objects.values().filter(
                          id=payment_details[i]['subscription_id']
                      ))
                     if len(subscription_details) == 0:

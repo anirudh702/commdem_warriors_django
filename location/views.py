@@ -11,9 +11,9 @@ def addCountryDialCodes(request):
     try:
         data = request.data
         for i in range(0,data.count()):
-            data_exist_or_not = CountriesDialCodeModel.objects.using('location_db').filter(country_code=data[i]['code']).first()
+            data_exist_or_not = CountriesDialCodeModel.objects.filter(country_code=data[i]['code']).first()
             if data_exist_or_not is None:
-               new_country = CountriesDialCodeModel.objects.using('location_db').create(
+               new_country = CountriesDialCodeModel.objects.create(
                 country_dial_code=data[i]['dial_code'],
                 country_code=data[i]['code'],
                 country_name=data[i]['name']
@@ -33,7 +33,7 @@ def addCountryDialCodes(request):
 def get_all_countries(request):
     """Function to get all countries details"""
     try:
-        countries_data = CountriesModel.objects.using('location_db').values().filter().all()
+        countries_data = CountriesModel.objects.values().filter().all()
         for i in range(0,len(countries_data)):
             countries_data[i].pop('created_at')
             countries_data[i].pop('updated_at')
@@ -51,7 +51,7 @@ def get_all_states_of_country(request):
     """Function to get all states details of a country"""
     try:
         country_id = request.data['id']
-        state_data = StatesModel.objects.using('location_db').values().filter(country_id=country_id).all()
+        state_data = StatesModel.objects.values().filter(country_id=country_id).all()
         for i in range(0,len(state_data)):
             state_data[i].pop('created_at')
             state_data[i].pop('updated_at')
@@ -69,7 +69,7 @@ def get_all_cities_of_state(request):
     """Function to get all cities details of a state"""
     try:
         state_id = request.data['id']
-        cities_data = CitiesModel.objects.using('location_db').values().filter(state_id=state_id).all()
+        cities_data = CitiesModel.objects.values().filter(state_id=state_id).all()
         for i in range(0,len(cities_data)):
             cities_data[i].pop('created_at')
             cities_data[i].pop('updated_at')

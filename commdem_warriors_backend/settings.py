@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-rs4v4ka@inz9*j@d1174q^vynl(iq9gs@u5824fdtv0#^hwxz&'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -87,109 +90,109 @@ WSGI_APPLICATION = 'commdem_warriors_backend.wsgi.application'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASE_ROUTERS = [
-    'commitment.commitmentRouter.CommitmentRouter',
-    'cities.citiesRouter.CitiesRouter',
-    'designation.designationRouter.DesignationRouter',
-    'income.incomeRouter.IncomeRouter',
-    'location.locationRouter.LocationRouter',
-    'redeemPoints.redeemPointsRouter.RedeemPointsRouter',
-    'referralCode.referralCodeRouter.ReferralCodeRouter',
-    'subscription.subscriptionRouter.SubscriptionRouter',
-    'user.userRouter.UserRouter',
+    # 'commitment.commitmentRouter.CommitmentRouter',
+    # 'cities.citiesRouter.CitiesRouter',
+    # 'designation.designationRouter.DesignationRouter',
+    # 'income.incomeRouter.IncomeRouter',
+    # 'location.locationRouter.LocationRouter',
+    # 'redeemPoints.redeemPointsRouter.RedeemPointsRouter',
+    # 'referralCode.referralCodeRouter.ReferralCodeRouter',
+    # 'subscription.subscriptionRouter.SubscriptionRouter',
+    # 'user.userRouter.UserRouter',
     ]
 DATABASE_APPS_MAPPING = {
-    'commitment': 'commitment_db',
-    'designation':'designation_db',
-    'income':'income_db',
-    'location':'location_db',
-    'notifications':'notifications_db',
-    'redeemPoints':'redeemPoints_db',
-    'referralCode':'referralCode_db',
-    'subscription':'subscription_db',
-    'user':'user_db',
+    # 'commitment': 'commitment_db',
+    # 'designation':'designation_db',
+    # 'income':'income_db',
+    # 'location':'location_db',
+    # 'notifications':'notifications_db',
+    # 'redeemPoints':'redeemPoints_db',
+    # 'referralCode':'referralCode_db',
+    # 'subscription':'subscription_db',
+    # 'user':'user_db',
     }
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'commdem_warriors',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
+        'ENGINE': os.getenv('DATABASE_ENGINE'),
+        'NAME': os.getenv('DATABASE_NAME'),
+        'USER': os.getenv('DATABASE_USER'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOST'),
+        'PORT': os.getenv('DATABASE_PORT'),
     },
-    'commitment_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'commitment',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    },
-    'designation_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'designation',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    },
-    'income_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'income',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    },
-    'location_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'location',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    },
-    'notifications_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'notifications',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    },
-    'redeemPoints_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'redeemPoints',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    },
-    'referralCode_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'referralCode',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    },
-    'subscription_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'subscription',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    },
-    'user_db': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'user',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '',
-        'PORT': '',
-    }
+    # 'commitment_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'commitment',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # },
+    # 'designation_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'designation',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # },
+    # 'income_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'income',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # },
+    # 'location_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'location',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # },
+    # 'notifications_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'notifications',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # },
+    # 'redeemPoints_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'redeemPoints',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # },
+    # 'referralCode_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'referralCode',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # },
+    # 'subscription_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'subscription',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # },
+    # 'user_db': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'user',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '123',
+    #     'HOST': '',
+    #     'PORT': '',
+    # }
 }
 
 
@@ -235,24 +238,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR,'static/'),]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CACHE_HOST='127.0.0.1'
-CACHE_PORT=11211
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
-}
-CACHE_TTL = 10
-
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
 TIME_ZONE =  'Asia/Kolkata'
-
-GRAPHENE = {
-  'SCHEMA': 'graph.schema.schema'
-  }

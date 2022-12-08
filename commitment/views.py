@@ -22,7 +22,7 @@ def add_new_commitment(request):
     try:
         user_id = request.data["user_id"]
         commitment_category_id_with_name_id = request.data['category_id_with_name_id']
-        user = UserModel.objects.using('user_db').filter(id=user_id,is_active=True).first()
+        user = UserModel.objects.filter(id=user_id,is_active=True).first()
         if not user:
             return Response(
                 ResponseData.error("User id is invalid"),
@@ -33,19 +33,19 @@ def add_new_commitment(request):
             both = str(commitment_category_id_with_name_id).split(',')[i].split(':')
             category_id = both[0]
             commitment_name_id = both[1]
-            category = CommitmentCategoryModel.objects.using('commitment_db').filter(id=category_id).first()
+            category = CommitmentCategoryModel.objects.filter(id=category_id).first()
             if not category:
                 return Response(
                     ResponseData.error("Category id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            commitment_name = CommitmentNameModel.objects.using('commitment_db').filter(id=commitment_name_id).first()
+            commitment_name = CommitmentNameModel.objects.filter(id=commitment_name_id).first()
             if not commitment_name:
                 return Response(
                     ResponseData.error("Commitment name id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            commitment_category_data = CommitmentModel.objects.using('commitment_db').filter(user_id=user_id,category_id=category_id).all()
+            commitment_category_data = CommitmentModel.objects.filter(user_id=user_id,category_id=category_id).all()
             print(f"commitment_category_data {commitment_category_data}")
             already_exists = False
             for i in range(0,commitment_category_data.count()):
@@ -63,7 +63,7 @@ def add_new_commitment(request):
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
-        CommitmentModel.objects.using('commitment_db').bulk_create(final_data)
+        CommitmentModel.objects.bulk_create(final_data)
         return Response(
             ResponseData.success_without_data(
                  "Commitment added successfully"),
@@ -82,7 +82,7 @@ def add_new_commitment_category(request):
         serializer = AddCommitmentCategorySerializer(data=data)
         if serializer.is_valid():
             name = serializer.data["name"]
-            new_commitment_category = CommitmentCategoryModel.objects.using('commitment_db').create(
+            new_commitment_category = CommitmentCategoryModel.objects.create(
                 name=name,
             )
             new_commitment_category.save()
@@ -112,19 +112,19 @@ def add_cause_of_category_success_or_failure(request):
             category_id = serializer.data["category"]
             title = serializer.data["title"]
             is_success = serializer.data['is_success']
-            category = CommitmentCategoryModel.objects.using('commitment_db').filter(id=category_id).first()
+            category = CommitmentCategoryModel.objects.filter(id=category_id).first()
             if not category:
                 return Response(
                     ResponseData.error("Category id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            data_exist_or_not = CauseOfCategorySuccessOrFailureModel.objects.using('commitment_db').filter(category=CommitmentCategoryModel(id=category_id),title=title).first()
+            data_exist_or_not = CauseOfCategorySuccessOrFailureModel.objects.filter(category=CommitmentCategoryModel(id=category_id),title=title).first()
             if data_exist_or_not:
                 return Response(
                     ResponseData.error("This data already exists"),
                     status=status.HTTP_200_OK,
                 )
-            new_cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.using('commitment_db').create(
+            new_cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.create(
                 category = CommitmentCategoryModel(id=category_id),
                 title = title,
                 is_success = is_success
@@ -155,7 +155,7 @@ def get_cause_of_category_success_or_failure(request):
         if serializer.is_valid():
             category_id = serializer.data['category']
             is_success = serializer.data['is_success']
-            category = CommitmentCategoryModel.objects.using('commitment_db').filter(id=category_id).first()
+            category = CommitmentCategoryModel.objects.filter(id=category_id).first()
             if(category_id == 2 or category_id == 3):
                 evening_time = '19:00:00'
                 evening_time_format = datetime.strptime(evening_time, '%H:%M:%S')
@@ -169,13 +169,13 @@ def get_cause_of_category_success_or_failure(request):
                     ResponseData.error("Category id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            cause_of_category_data = CauseOfCategorySuccessOrFailureModel.objects.using('commitment_db').filter(category = CommitmentCategoryModel(id=category_id)).first()
+            cause_of_category_data = CauseOfCategorySuccessOrFailureModel.objects.filter(category = CommitmentCategoryModel(id=category_id)).first()
             if not cause_of_category_data:
                 return Response(
                     ResponseData.error("Cause of category id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.using('commitment_db').values().filter(
+            cause_of_category = CauseOfCategorySuccessOrFailureModel.objects.values().filter(
             category = CommitmentCategoryModel(id=category_id),is_success=is_success).all()
             for i in range(0,len(cause_of_category)):
                 cause_of_category[i]['isSelected'] = False
@@ -206,13 +206,13 @@ def add_new_commitment_name(request):
             failure_name = serializer.data["failureName"]
             current_day_name = serializer.data["currentDayName"]
             category_id = serializer.data['category']
-            category = CommitmentCategoryModel.objects.using('commitment_db').filter(id=category_id).first()
+            category = CommitmentCategoryModel.objects.filter(id=category_id).first()
             if not category:
                 return Response(
                     ResponseData.error("Category id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-            new_commitment_name = CommitmentNameModel.objects.using('commitment_db').create(
+            new_commitment_name = CommitmentNameModel.objects.create(
                 name=name,
                 successName=success_name,
                 failureName=failure_name,
@@ -247,10 +247,10 @@ def get_commitment_category_with_name(request):
             category_id = serializer.data["id"]
             if category_id is None:
                 commitment_category_data = list(
-                CommitmentCategoryModel.objects.using('commitment_db').values().filter())
+                CommitmentCategoryModel.objects.values().filter())
                 for i in range(0,len(commitment_category_data)):
                     commitment_category_data[i]['commitment_category_name_data'] = list(
-                CommitmentNameModel.objects.using('commitment_db').values().filter(category=CommitmentCategoryModel(id=commitment_category_data[i]['id'])))
+                CommitmentNameModel.objects.values().filter(category=CommitmentCategoryModel(id=commitment_category_data[i]['id'])))
                     for j in range(0,len(commitment_category_data[i]['commitment_category_name_data'])):
                         commitment_category_data[i]['commitment_category_name_data'][j].pop('created_at')
                         commitment_category_data[i]['commitment_category_name_data'][j].pop('updated_at')
@@ -262,9 +262,9 @@ def get_commitment_category_with_name(request):
                         commitment_category_data, "Commitment categories fetched successfully"),
                     status=status.HTTP_201_CREATED)
             else:
-                commitment_category_data = list(CommitmentCategoryModel.objects.using('commitment_db').values().filter(id=category_id).get())
+                commitment_category_data = list(CommitmentCategoryModel.objects.values().filter(id=category_id).get())
                 commitment_category_data[0]['commitment_category_name_data'] = list(
-                CommitmentNameModel.objects.using('commitment_db').values().filter(category=CommitmentCategoryModel(id=category_id)))
+                CommitmentNameModel.objects.values().filter(category=CommitmentCategoryModel(id=category_id)))
                 for j in range(0,len(commitment_category_data[0]['commitment_category_name_data'])):
                         commitment_category_data[0]['commitment_category_name_data'][j].pop('created_at')
                         commitment_category_data[0]['commitment_category_name_data'][j].pop('updated_at')
@@ -294,7 +294,7 @@ def get_commitment_name(request):
             category_id = serializer.data["category"]
             if category_id is None:
                 commitment_name_data = list(
-                CommitmentNameModel.objects.using('commitment_db').values().filter())
+                CommitmentNameModel.objects.values().filter())
                 for i in range(0,commitment_name_data.count()):
                     commitment_name_data[i].pop('created_at')
                     commitment_name_data[i].pop('updated_at')
@@ -303,7 +303,7 @@ def get_commitment_name(request):
                         commitment_name_data, "Commitment names fetched successfully"),
                     status=status.HTTP_201_CREATED)
             else:
-                commitment_name_data = CommitmentNameModel.objects.using('commitment_db').values().filter(category = CommitmentCategoryModel(id=category_id)).all()
+                commitment_name_data = CommitmentNameModel.objects.values().filter(category = CommitmentCategoryModel(id=category_id)).all()
                 for i in range(0,commitment_name_data.count()):
                     commitment_name_data[i].pop('created_at')
                     commitment_name_data[i].pop('updated_at')
@@ -325,7 +325,7 @@ def functionForReasonsBehindCommitments(commitment_data,i):
         commitment_data[i]['commitment_name_data'].pop('created_at')
         commitment_data[i]['commitment_name_data'].pop('updated_at')
         for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
-                commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.using('commitment_db').values().filter(id=
+                commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
                 commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
                 commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
                 commitment_data[i]['reasons_behind_success_or_failure'][j].pop('updated_at')
@@ -340,11 +340,11 @@ def changesInAllCommitment(commitment_data,user_id):
         commitment_data[i].pop('created_at')
         commitment_data[i].pop('updated_at')
         commitment_data[i].pop('user_id')
-        commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.using('commitment_db').values().filter(id=commitment_data[i]['category_id']).get()
+        commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
         commitment_data[i].pop('category_id')
         commitment_data[i]['category_data'].pop('created_at')
         commitment_data[i]['category_data'].pop('updated_at')
-        commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.using('commitment_db').values().filter(id=commitment_data[i]['commitment_name_id']).get()
+        commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
         commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
            user_id=user_id,commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
         functionForReasonsBehindCommitments(commitment_data,i)
@@ -354,30 +354,30 @@ def changesInOtherCommitments(commitment_data):
         for i in range(0,len(commitment_data)):
             commitment_data[i].pop('created_at')
             commitment_data[i].pop('updated_at')
-            commitment_data[i]['user_data'] = UserModel.objects.using('user_db').values().filter(id=commitment_data[i]['user_id']).first()
-            city = UserLocationDetailsModel.objects.using('user_db').values().filter(user_id=commitment_data[i]['user_id']).first()
+            commitment_data[i]['user_data'] = UserModel.objects.values().filter(id=commitment_data[i]['user_id']).first()
+            city = UserLocationDetailsModel.objects.values().filter(user_id=commitment_data[i]['user_id']).first()
             if city is not None:
-               commitment_data[i]['user_data']['city_data'] = CitiesModel.objects.using('location_db').values().filter(id=city['city_id']).first()
+               commitment_data[i]['user_data']['city_data'] = CitiesModel.objects.values().filter(id=city['city_id']).first()
                commitment_data[i]['user_data']['city_data'].pop('created_at')
                commitment_data[i]['user_data']['city_data'].pop('updated_at')
-            income_range_id = UserProfessionalDetailsModel.objects.values().using('user_db').filter(user_id=commitment_data[i]['user_id']).first()
+            income_range_id = UserProfessionalDetailsModel.objects.values().filter(user_id=commitment_data[i]['user_id']).first()
             if income_range_id is not None:
-               commitment_data[i]['user_data']['income_range_data'] = IncomeModel.objects.using('income_db').values().filter(id=income_range_id['income_range_id']).get()
+               commitment_data[i]['user_data']['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
                commitment_data[i]['user_data']['income_range_data'].pop('created_at')
                commitment_data[i]['user_data']['income_range_data'].pop('updated_at')
-            designation = UserProfessionalDetailsModel.objects.using('user_db').values().filter(user_id=commitment_data[i]['user_id']).first()
+            designation = UserProfessionalDetailsModel.objects.values().filter(user_id=commitment_data[i]['user_id']).first()
             if designation is not None:
-               commitment_data[i]['user_data']['designation_data'] = DesignationModel.objects.using('designation_db').values().filter(id=designation['designation_id']).get()
+               commitment_data[i]['user_data']['designation_data'] = DesignationModel.objects.values().filter(id=designation['designation_id']).get()
                commitment_data[i]['user_data']['designation_data'].pop('created_at')
                commitment_data[i]['user_data']['designation_data'].pop('updated_at')
             commitment_data[i]['user_data'].pop('created_at')
             commitment_data[i]['user_data'].pop('updated_at')
-            commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.using('commitment_db').values().filter(id=commitment_data[i]['category_id']).get()
+            commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
             commitment_data[i].pop('category_id')
             commitment_data[i]['category_data'].pop('created_at')
             commitment_data[i]['category_data'].pop('updated_at')
-            commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.using('commitment_db').values().filter(id=commitment_data[i]['commitment_name_id']).get()
-            commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.using('commitment_db').values().filter(
+            commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+            commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
                 user_id=commitment_data[i]['user_id'],commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
             commitment_data[i].pop('user_id')
             functionForReasonsBehindCommitments(commitment_data,i)
@@ -393,7 +393,7 @@ def get_all_commitments(request):
             user_id = serializer.data["user_id"]
             commitment_data = []
             commitment_data = list(
-                CommitmentModel.objects.using('commitment_db').values().filter().order_by('-commitment_date'))
+                CommitmentModel.objects.values().filter().order_by('-commitment_date'))
             if commitment_data.count() == 0:
                        return Response(
                        ResponseData.success(
@@ -432,13 +432,13 @@ def get_other_users_commitments(request):
         print(search_param)
         commitment_data = []
         if page_number == 0 and search_param != "":
-            commitment_data = CommitmentModel.objects.using('commitment_db').values().filter().order_by('-commitment_date')
+            commitment_data = CommitmentModel.objects.values().filter().order_by('-commitment_date')
         elif page_number != 0 and search_param != "":
-            commitment_data = CommitmentModel.objects.using('commitment_db').values().filter().order_by('-commitment_date')[start:end]
+            commitment_data = CommitmentModel.objects.values().filter().order_by('-commitment_date')[start:end]
         elif page_number != 0 and search_param == "":
-            commitment_data = CommitmentModel.objects.using('commitment_db').values().filter().order_by('-commitment_date')[start:end]
+            commitment_data = CommitmentModel.objects.values().filter().order_by('-commitment_date')[start:end]
         else:
-            commitment_data = CommitmentModel.objects.using('commitment_db').values().filter().order_by('-commitment_date')
+            commitment_data = CommitmentModel.objects.values().filter().order_by('-commitment_date')
         final_commitment_data = []
         if commitment_data is None:
                    return Response(
@@ -477,7 +477,7 @@ def get_group_commitments_by_commitment_date_only(request):
     try:
         data = request.data
         print(data)
-        user = UserModel.objects.using('user_db').filter(id=request.data['user_id'],is_active=True).first()
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                    return Response(
                        ResponseData.error("User id is invalid"),
@@ -495,13 +495,13 @@ def get_group_commitments_by_commitment_date_only(request):
             end=page_no*page_size
             commitment_data = []
             if page_number == 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')
             elif page_number != 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
             elif page_number != 0 and search_param == "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')[start:end]
             else:
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')
             if commitment_data.count() == 0:
                     return Response(
                        ResponseData.success(
@@ -526,7 +526,7 @@ def get_user_commitments(request):
     try:
         data = request.data
         print(data)
-        user = UserModel.objects.using('user_db').filter(id=request.data['user_id'],is_active=True).first()
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                    return Response(
                        ResponseData.error("User id is invalid"),
@@ -544,13 +544,13 @@ def get_user_commitments(request):
             end=page_no*page_size
             commitment_data = []
             if page_number == 0 and search_param != "":
-                commitment_data =CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(category__name__icontains=search_param)).order_by('-commitment_date')
+                commitment_data =CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(category__name__icontains=search_param)).order_by('-commitment_date')
             elif page_number != 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(category__name__icontains=search_param)).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(category__name__icontains=search_param)).order_by('-commitment_date')[start:end]
             elif page_number != 0 and search_param == "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter().order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter().order_by('-commitment_date')[start:end]
             else:
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter().order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter().order_by('-commitment_date')
             if commitment_data.count() == 0:
                        return Response(
                        ResponseData.success(
@@ -575,7 +575,7 @@ def get_user_commitments_by_commitment_date_only(request):
     try:
         data = request.data
         print(data)
-        user = UserModel.objects.using('user_db').filter(id=request.data['user_id'],is_active=True).first()
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                    return Response(
                        ResponseData.error("User id is invalid"),
@@ -595,13 +595,13 @@ def get_user_commitments_by_commitment_date_only(request):
             commitment_data = []
             print("Dcd")
             if page_number == 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')
             elif page_number != 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
             elif page_number != 0 and search_param == "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')[start:end]
             else:
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')
             if commitment_data.count() == 0:
                        return Response(
                        ResponseData.success(
@@ -627,7 +627,7 @@ def share_user_commitment_on_whatsapp(request):
     try:
         data = request.data
         print(data)
-        user = UserModel.objects.using('user_db').filter(id=request.data['user_id'],is_active=True).first()
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                    return Response(
                        ResponseData.error("User id is invalid"),
@@ -639,7 +639,7 @@ def share_user_commitment_on_whatsapp(request):
             title_message = serializer.data['title_message']
             commitment_date = serializer.data['commitment_date']
             finalMessage = f"{title_message}\n\n"
-            commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date').all()
+            commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date').all()
             if commitment_data.count() == 0:
                        return Response(
                        ResponseData.success_without_data(
@@ -648,9 +648,9 @@ def share_user_commitment_on_whatsapp(request):
             isPending = False
             message = ""
             for i in range(0,len(commitment_data)):
-                   commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.using('commitment_db').values().filter(id=commitment_data[i]['category_id']).get()
+                   commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
                    finalMessage += f"{i+1}. {commitment_data[i]['category_data']['name']}\n"
-                   commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.using('commitment_db').values().filter(id=commitment_data[i]['commitment_name_id']).get()
+                   commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
                    if(commitment_data[i]['commitment_date'].date() > datetime.now().date()):
                     finalMessage += f"-> {commitment_data[i]['commitment_name_data']['name']}\n"
                    else:
@@ -684,7 +684,7 @@ def get_user_commitments_by_start_end_date_only(request):
     """Function to get user commitments based on start and end date only"""
     try:
         data = request.data
-        user = UserModel.objects.using('user_db').filter(id=request.data['user_id'],is_active=True).first()
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                    return Response(
                        ResponseData.error("User id is invalid"),
@@ -705,13 +705,13 @@ def get_user_commitments_by_start_end_date_only(request):
             end=page_no*page_size
             commitment_data = []
             if page_number == 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__range=[start_date, end_date]) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__range=[start_date, end_date]) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')
             elif page_number != 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__range=[start_date, end_date]) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__range=[start_date, end_date]) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
             elif page_number != 0 and search_param == "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__range=[start_date, end_date])).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__range=[start_date, end_date])).order_by('-commitment_date')[start:end]
             else:
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id=user_id).filter(Q(commitment_date__range=[start_date, end_date])).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__range=[start_date, end_date])).order_by('-commitment_date')
             if commitment_data.count() == 0:
                        return Response(
                        ResponseData.success(
@@ -735,7 +735,7 @@ def get_group_commitments_by_start_end_date_only(request):
     """Function to get group commitments based on start and end date only"""
     try:
         data = request.data
-        user = UserModel.objects.using('user_db').filter(id=request.data['user_id'],is_active=True).first()
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                    return Response(
                        ResponseData.error("User id is invalid"),
@@ -756,13 +756,13 @@ def get_group_commitments_by_start_end_date_only(request):
             end=page_no*page_size
             commitment_data = []
             if page_number == 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[start_date, end_date]) & (Q(user__last_name__icontains=search_param) | Q(category__name__icontains=search_param))).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[start_date, end_date]) & (Q(user__last_name__icontains=search_param) | Q(category__name__icontains=search_param))).order_by('-commitment_date')
             elif page_number != 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[start_date, end_date]) & (Q(user__last_name__icontains=search_param) | Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[start_date, end_date]) & (Q(user__last_name__icontains=search_param) | Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
             elif page_number != 0 and search_param == "":
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[start_date, end_date])).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[start_date, end_date])).order_by('-commitment_date')[start:end]
             else:
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[start_date, end_date])).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[start_date, end_date])).order_by('-commitment_date')
             if commitment_data.count() == 0:
                        return Response(
                        ResponseData.success(
@@ -786,13 +786,13 @@ def update_commitment(request):
     """Function to update commitment based on user id and commitment id"""
     try:
         data = request.data
-        user = UserModel.objects.using('user_db').filter(id=request.data['user_id'],is_active=True).first()
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                 return Response(
                     ResponseData.error("User id is invalid"),
                     status=status.HTTP_200_OK,
                 )
-        commitment_id = CommitmentModel.objects.using('commitment_db').filter(id=request.data['id']).first()
+        commitment_id = CommitmentModel.objects.filter(id=request.data['id']).first()
         if not commitment_id:
                 return Response(
                     ResponseData.error("Commitment id is invalid"),
@@ -804,7 +804,7 @@ def update_commitment(request):
             commitment_id = serializer.data['id']
             cause_id = serializer.data['cause_id']
             is_done = serializer.data['is_done']
-            commitment_data = CommitmentModel.objects.using('commitment_db').filter(
+            commitment_data = CommitmentModel.objects.filter(
                 id=commitment_id,user_id=user_id
             ).first()
             commitment_data.is_done = is_done
@@ -816,16 +816,16 @@ def update_commitment(request):
                 if cause_ids[i] != "":
                    new_ids = str(cause_ids[i]).replace(",","").strip()
                    print(f"cause_ids[i] {new_ids}")
-                   cause_id = CauseOfCategorySuccessOrFailureModel.objects.using('commitment_db').filter(id=int(new_ids)).first()
+                   cause_id = CauseOfCategorySuccessOrFailureModel.objects.filter(id=int(new_ids)).first()
                    if not cause_id:
                            return Response(
                                ResponseData.error("Any one of the cause id is invalid"),
                                status=status.HTTP_200_OK,
                            )
-                   does_data_exists_or_not = ReasonBehindCommitmentSuccessOrFailureForUser.objects.using('commitment_db').filter(user_id=user_id,
+                   does_data_exists_or_not = ReasonBehindCommitmentSuccessOrFailureForUser.objects.filter(user_id=user_id,
                    cause_of_category_success_or_failure=CauseOfCategorySuccessOrFailureModel(id=new_ids)).first()
                    if not does_data_exists_or_not:
-                       reasons = ReasonBehindCommitmentSuccessOrFailureForUser.objects.using('commitment_db').create(
+                       reasons = ReasonBehindCommitmentSuccessOrFailureForUser.objects.create(
                            user_id =user_id,
                            commitment = CommitmentModel(id=commitment_id),
                            cause_of_category_success_or_failure = CauseOfCategorySuccessOrFailureModel(id=int(new_ids))

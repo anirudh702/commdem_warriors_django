@@ -6,7 +6,6 @@ from income.models import IncomeModel
 from location.models import CountriesModel, StatesModel
 from notifications.models import UserPlayerIdModel
 from notifications.views import send_notification_to_admin
-from onesignal import BASE_URL, ONESIGNAL_APP_ID
 from redeemPoints.models import RedeemPointsModel
 from referralCode.models import ReferralCodeModel
 from subscription.models import SubscriptionModel
@@ -22,6 +21,10 @@ from django.db.models import Q
 from random import randint
 import requests as R
 from dateutil.relativedelta import relativedelta
+from dotenv import load_dotenv
+import os 
+
+load_dotenv()
 
 def random_with_N_digits(n):
     range_start = 10**(n-1)
@@ -62,7 +65,7 @@ def signup(request):
             player_id = serializer.data['player_id'] if 'player_id' in request.data else ""
             user_uid = serializer.data['user_uid'] if 'user_uid' in request.data else ""
             user_gmail_id = serializer.data['user_gmail_id'] if 'user_gmail_id' in request.data else ""
-            user = UserModel.objects.using('user_db').filter(
+            user = UserModel.objects.filter(
                 Q(email__icontains=email) | Q(mobile_number__icontains=mobile_number)).first()
             if user:
                 return Response(
@@ -71,7 +74,7 @@ def signup(request):
                     status=status.HTTP_201_CREATED,
                 )
             if(referral_code!=0):
-              referral_code_data = ReferralCodeModel.objects.using('referralCode_db').filter(
+              referral_code_data = ReferralCodeModel.objects.filter(
                   referral_code=referral_code).all()
               if referral_code_data.count() == 0:
                   return Response(
@@ -82,7 +85,7 @@ def signup(request):
             if profile_pic!="":
                  fs = FileSystemStorage(location='static/')
                  fs.save(profile_pic.name, profile_pic)
-            new_user = UserModel.objects.using('user_db').create(
+            new_user = UserModel.objects.create(
                 full_name=full_name,
                 mobile_number=mobile_number,
                 email=email,
@@ -94,8 +97,8 @@ def signup(request):
                 is_active=True if mobile_number == "+917020829599" else False,
             )
             new_user.save()
-            city_name = CitiesModel.objects.using('location_db').filter(id=city_id).first()
-            new_user_location = UserLocationDetailsModel.objects.using('user_db').create(
+            city_name = CitiesModel.objects.filter(id=city_id).first()
+            new_user_location = UserLocationDetailsModel.objects.create(
                 user_id=new_user.id,
                 city_id=city_id,
                 state_id=state_id,
@@ -103,14 +106,14 @@ def signup(request):
                 city_name=city_name.name
             )
             new_user_location.save()
-            new_user_professional_details = UserProfessionalDetailsModel.objects.using('user_db').create(
+            new_user_professional_details = UserProfessionalDetailsModel.objects.create(
                 designation_title=designation_title,
                 user=UserModel(id=new_user.id),
                 designation_id=designation,
                 income_range_id=income_range,
             )
             new_user_professional_details.save()
-            new_user_health_details = UserHealthDetailsModel.objects.using('user_db').create(
+            new_user_health_details = UserHealthDetailsModel.objects.create(
                 user=UserModel(id=new_user.id),
                 weight=weight,
                 height=height,
@@ -121,40 +124,40 @@ def signup(request):
             )
             new_user_health_details.save()
             generated_referral_code = random_with_N_digits(6)
-            new_referral_code = ReferralCodeModel.objects.using('referralCode_db').create(
+            new_referral_code = ReferralCodeModel.objects.create(
                 user_id=new_user.id,
                 referral_code=generated_referral_code,
             )
             new_referral_code.save()
             if(referral_code!=0):
-               new_redeem_point = RedeemPointsModel.objects.using('redeemPoints_db').create(
+               new_redeem_point = RedeemPointsModel.objects.create(
                    to_user_id=referral_code_data[0].user.id,
                    from_user_id=new_user.id,
                    redeem_points=25,
                   )
                new_redeem_point.save()
             if 'player_id' != "":
-              store_player_id = UserPlayerIdModel.objects.using('notifications_db').create(
+              store_player_id = UserPlayerIdModel.objects.create(
                    user_id=new_user.id,
                    player_id=player_id,
                   )
               store_player_id.save()
             list_of_player_ids = []
-            all_admin_users = UserModel.objects.using('user_db').filter(
+            all_admin_users = UserModel.objects.filter(
                        is_admin=True,is_active=True).all()
             for i in range(0,all_admin_users.count()):
-              admin_player_id = UserPlayerIdModel.objects.using('notifications_db').filter(
+              admin_player_id = UserPlayerIdModel.objects.filter(
                        user_id=all_admin_users[i].id,is_active=True).all()
               for j in range(0,admin_player_id.count()):
                  list_of_player_ids.append(admin_player_id[j].player_id)
             print(list_of_player_ids)
             data = {
-                 "app_id": ONESIGNAL_APP_ID,
+                 "app_id": os.getenv('ONESIGNAL_APP_ID'),
                  "include_player_ids" : list_of_player_ids,
                  "data": {"foo": f"New user joined recently"},
                  "contents": {"en": "Please check if profile is valid or not"}}           
-            R.post(f"{BASE_URL}/notifications",json=data)
-            gmail_account_credentials = UserGoogleSignInModel.objects.using('user_db').create(
+            R.post(f"{os.getenv('BASE_URL')}/notifications",json=data)
+            gmail_account_credentials = UserGoogleSignInModel.objects.create(
                    gmail_id=user_gmail_id,
                    uid=user_uid,
                    user=UserModel(id=new_user.id),
@@ -183,7 +186,7 @@ def signin(request):
         data = request.data
         print(f"data {data}")
         if('uid' in request.data):
-            google_data = UserGoogleSignInModel.objects.using('user_db').filter(
+            google_data = UserGoogleSignInModel.objects.filter(
                 uid=data['uid'],is_active=True).first()
             if not google_data:
                 return Response(
@@ -191,12 +194,12 @@ def signin(request):
                         "Google account does not exists, please register first"),
                     status=status.HTTP_201_CREATED,
                 )
-            user_data = UserModel.objects.using('user_db').filter(id=google_data.user_id,is_active=True).first()
-            country_details = UserLocationDetailsModel.objects.using('user_db').filter(user_id=google_data.user_id,is_active=True).first()
-            country_code = CountriesModel.objects.using('location_db').filter(country_id=country_details.country_id).first()
-            country_dial_code=CountriesDialCodeModel.objects.using('location_db').filter(country_code=country_code.country_code).first()
+            user_data = UserModel.objects.filter(id=google_data.user_id,is_active=True).first()
+            country_details = UserLocationDetailsModel.objects.filter(user_id=google_data.user_id,is_active=True).first()
+            country_code = CountriesModel.objects.filter(country_id=country_details.country_id).first()
+            country_dial_code=CountriesDialCodeModel.objects.filter(country_code=country_code.country_code).first()
             data['mobile_number'] = str(user_data.mobile_number)
-        user = UserModel.objects.using('user_db').filter(Q(mobile_number__icontains=data['mobile_number']),is_active=True).first()
+        user = UserModel.objects.filter(Q(mobile_number__icontains=data['mobile_number']),is_active=True).first()
         if not user:
             return Response(
                 ResponseData.error(
@@ -204,9 +207,9 @@ def signin(request):
                 status=status.HTTP_201_CREATED,
             )
         print(request.data)
-        country_details = UserLocationDetailsModel.objects.using('user_db').filter(user=UserModel(id=user.id,is_active=True)).first()
-        country_code = CountriesModel.objects.using('location_db').filter(country_id=country_details.country_id).first()
-        country_dial_code=CountriesDialCodeModel.objects.using('location_db').filter(country_code=country_code.country_code).first()
+        country_details = UserLocationDetailsModel.objects.filter(user=UserModel(id=user.id,is_active=True)).first()
+        country_code = CountriesModel.objects.filter(country_id=country_details.country_id).first()
+        country_dial_code=CountriesDialCodeModel.objects.filter(country_code=country_code.country_code).first()
         data['mobile_number'] = country_dial_code.country_dial_code + str(user.mobile_number)
         playerId = data["player_id"]
         if(user.mobile_number != '+917020829599'):
@@ -216,20 +219,20 @@ def signin(request):
                     "Please wait while admin verifies your account"),
                 status=status.HTTP_201_CREATED,
             )   
-        user_details = UserModel.objects.using('user_db').values().filter(id=user.id,is_active=True).all()
-        referral_code = ReferralCodeModel.objects.using('referralCode_db').filter(
+        user_details = UserModel.objects.values().filter(id=user.id,is_active=True).all()
+        referral_code = ReferralCodeModel.objects.filter(
             user_id=user_details[0]['id']).first()
         for i in range(0,len(user_details)):
             user_details[i]['referralCode'] = referral_code.referral_code
             user_details[i].pop('created_at')
             user_details[i].pop('updated_at')
-        player_id_exists = UserPlayerIdModel.objects.using('notifications_db').filter(
+        player_id_exists = UserPlayerIdModel.objects.filter(
             user_id=user_details[0]['id'],player_id=playerId).first()
         if player_id_exists:
             player_id_exists.player_id=playerId
             player_id_exists.save()
         else:
-            store_player_id = UserPlayerIdModel.objects.using('notifications_db').create(
+            store_player_id = UserPlayerIdModel.objects.create(
                user_id=user_details[0]['id'],
                player_id=playerId,
               )
@@ -253,7 +256,7 @@ def is_user_subscribed(request):
         print(f"IsValid: {serializer.is_valid()}")
         if serializer.is_valid():
             user_id = serializer.data['id']
-            user = UserModel.objects.using('user_db').filter(
+            user = UserModel.objects.filter(
                 id=user_id,is_active=True).first()
             if not user:
                 return Response(
@@ -261,14 +264,14 @@ def is_user_subscribed(request):
                         "Account does not exists, please register first"),
                     status=status.HTTP_201_CREATED,
                 )
-            user_subscription_details = UserPaymentDetailsModel.objects.using('user_db').filter(
+            user_subscription_details = UserPaymentDetailsModel.objects.filter(
                 user=UserModel(id=user_id),is_active=True).first()
             if(user_subscription_details is None):
                 return Response(
                     ResponseData.error(
                         "You are not subscribed currently"),
                 status=status.HTTP_201_CREATED)
-            subscription_data = SubscriptionModel.objects.using('subscription_db').filter(id=user_subscription_details.subscription_id).first()
+            subscription_data = SubscriptionModel.objects.filter(id=user_subscription_details.subscription_id).first()
             diff = (datetime.now().date() - user_subscription_details.created_at.date())
             print(subscription_data.is_free_trial)
             if(subscription_data.is_free_trial):
@@ -328,7 +331,7 @@ def addNewPayment(request):
             payment_id = serializer.data["payment_id"]
             subscription_id = serializer.data["subscription_id"]
             date_of_payment = serializer.data['date_of_payment']
-            subscription_details = SubscriptionModel.objects.using('subscription_db').filter(
+            subscription_details = SubscriptionModel.objects.filter(
                          id=subscription_id
                      ).first()
             if subscription_details is None:
@@ -336,7 +339,7 @@ def addNewPayment(request):
                        ResponseData.error("Subscription id is invalid"),
                        status=status.HTTP_200_OK,
                    )
-            does_subscription_exists = UserPaymentDetailsModel.objects.using('user_db').filter(
+            does_subscription_exists = UserPaymentDetailsModel.objects.filter(
                 user_id=user_id,is_active=True).first()
             if does_subscription_exists:
                 return Response(
@@ -344,7 +347,7 @@ def addNewPayment(request):
                         "You are already subscribed currently"),
                     status=status.HTTP_201_CREATED,
                 )
-            new_payment_record = UserPaymentDetailsModel.objects.using('user_db').create(
+            new_payment_record = UserPaymentDetailsModel.objects.create(
                 user_id=user_id,
                 payment_id=payment_id,
                 subscription_id=subscription_id,
@@ -352,13 +355,13 @@ def addNewPayment(request):
                 is_active = True
             )
             new_payment_record.save()
-            # new_subscription = UserSubscriptionDetailsModel.objects.using('user_db').create(
+            # new_subscription = UserSubscriptionDetailsModel.objects.create(
             #     user=UserModel(id=user_id),
             #     subscription_id=subscription_id,
             #     is_active = True
             # )
             # new_subscription.save()
-            user_data = UserModel.objects.using('user_db').filter(id=user_id).first()
+            user_data = UserModel.objects.filter(id=user_id).first()
             print("dcdssdcs")
             user_data.is_subscribed = True
             user_data.save()
@@ -387,7 +390,7 @@ def addNewSubscription(request):
         if serializer.is_valid():
             user_id = serializer.data["user_id"]
             subscription_id = serializer.data["subscription_id"]
-            user = UserModel.objects.using('user_db').filter(
+            user = UserModel.objects.filter(
                 id=user_id).first()
             if not user:
                 return Response(
@@ -395,7 +398,7 @@ def addNewSubscription(request):
                         "User id is invalid"),
                     status=status.HTTP_201_CREATED,
                 )
-            subscription = SubscriptionModel.objects.using('subscription_db').filter(
+            subscription = SubscriptionModel.objects.filter(
                 id=subscription_id).first()
             if not subscription:
                 return Response(
@@ -403,7 +406,7 @@ def addNewSubscription(request):
                         "Subscription id is invalid"),
                     status=status.HTTP_201_CREATED,
                 )
-            does_subscription_exists = UserSubscriptionDetailsModel.objects.using('user_db').filter(
+            does_subscription_exists = UserSubscriptionDetailsModel.objects.filter(
                 user_id=user_id,is_active=True).first()
             if does_subscription_exists:
                 return Response(
@@ -411,7 +414,7 @@ def addNewSubscription(request):
                         "You are already subscribed currently"),
                     status=status.HTTP_201_CREATED,
                 )
-            new_subscription = UserSubscriptionDetailsModel.objects.using('user_db').create(
+            new_subscription = UserSubscriptionDetailsModel.objects.create(
                 user=UserModel(id=user_id),
                 subscription_id=subscription_id,
                 is_active = True
@@ -442,7 +445,7 @@ def getUserSubscriptionById(request):
         if serializer.is_valid():
             user_id = serializer.data["user"]
             subscription_id = serializer.data["subscription"]
-            user = UserModel.objects.using('user_db').filter(
+            user = UserModel.objects.filter(
                 id=user_id).first()
             if not user:
                 return Response(
@@ -450,7 +453,7 @@ def getUserSubscriptionById(request):
                         "User id is invalid"),
                     status=status.HTTP_201_CREATED,
                 )
-            subscription = SubscriptionModel.objects.using('subscription_db').filter(
+            subscription = SubscriptionModel.objects.filter(
                 id=subscription_id).first()
             if not subscription:
                 return Response(
@@ -458,7 +461,7 @@ def getUserSubscriptionById(request):
                         "Subscription id is invalid"),
                     status=status.HTTP_201_CREATED,
                 )
-            subscription_data = UserSubscriptionDetailsModel.objects.using('user_db').values().filter(id=subscription_id,user=UserModel(id=user_id)).all()
+            subscription_data = UserSubscriptionDetailsModel.objects.values().filter(id=subscription_id,user=UserModel(id=user_id)).all()
             for i in range(0,subscription_data.count()):
                 subscription_data[i].pop('created_at')
                 subscription_data[i].pop('updated_at')
@@ -485,7 +488,7 @@ def getAllSubscriptionsOfUser(request):
         serializer = GetUserSubscriptionSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user"]
-            user = UserModel.objects.using('user_db').filter(
+            user = UserModel.objects.filter(
                 id=user_id).first()
             if not user:
                 return Response(
@@ -493,7 +496,7 @@ def getAllSubscriptionsOfUser(request):
                         "User id is invalid"),
                     status=status.HTTP_201_CREATED,
                 )
-            subscription_data = UserSubscriptionDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=user_id),is_active=True).all()
+            subscription_data = UserSubscriptionDetailsModel.objects.values().filter(user=UserModel(id=user_id),is_active=True).all()
             for i in range(0,subscription_data.count()):
                 subscription_data[i].pop('created_at')
                 subscription_data[i].pop('updated_at')
@@ -530,29 +533,29 @@ def getAllUsersDetails(request):
         print(end)
         print(f"request_data {request_data}")
         if(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == "" and search_param == "" ):
-           users_data = UserModel.objects.using('user_db').values().filter(is_active=True).order_by('-joining_date').all()[start:end]
+           users_data = UserModel.objects.values().filter(is_active=True).order_by('-joining_date').all()[start:end]
         elif(request_data['sortBy'] == "Age (max to min)" and request_data['filterByDesignation'] == ""):
-           users_data = UserModel.objects.using('user_db').values().filter(is_active=True).order_by('-userhealthdetailsmodel__age').all()[start:end] if search_param == "" else UserModel.objects.using('user_db').values().filter(Q(full_name__icontains=search_param)| Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city_name__icontains=search_param),is_active=True).order_by('-userhealthdetailsmodel__age').all()[start:end]
+           users_data = UserModel.objects.values().filter(is_active=True).order_by('-userhealthdetailsmodel__age').all()[start:end] if search_param == "" else UserModel.objects.values().filter(Q(full_name__icontains=search_param)| Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city_name__icontains=search_param),is_active=True).order_by('-userhealthdetailsmodel__age').all()[start:end]
         elif(request_data['sortBy'] == "Age (min to max)" and request_data['filterByDesignation'] == ""):
-           users_data = UserModel.objects.using('user_db').values().filter(is_active=True).order_by('userhealthdetailsmodel__age').all()[start:end] if search_param == "" else UserModel.objects.using('user_db').values().filter(Q(full_name__icontains=search_param) | Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city_name__icontains=search_param),is_active=True).order_by('userhealthdetailsmodel__age').all()[start:end]
+           users_data = UserModel.objects.values().filter(is_active=True).order_by('userhealthdetailsmodel__age').all()[start:end] if search_param == "" else UserModel.objects.values().filter(Q(full_name__icontains=search_param) | Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city_name__icontains=search_param),is_active=True).order_by('userhealthdetailsmodel__age').all()[start:end]
         elif(request_data['sortBy'] == "Age (max to min)" and request_data['filterByDesignation'] != ""):
-           users_data = UserModel.objects.using('user_db').values().filter(userprofessionaldetailsmodel__designation_id = request_data['filterByDesignation'],is_active=True).order_by('-userhealthdetailsmodel__age').all()[start:end] if search_param == "" else UserModel.objects.using('user_db').values().filter(Q(full_name__icontains=search_param)  | Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city__name__icontains=search_param),is_active=True).filter(userprofessionaldetailsmodel__designation_id=request_data['filterByDesignation']).order_by('-userhealthdetailsmodel__age').all()[start:end]
+           users_data = UserModel.objects.values().filter(userprofessionaldetailsmodel__designation_id = request_data['filterByDesignation'],is_active=True).order_by('-userhealthdetailsmodel__age').all()[start:end] if search_param == "" else UserModel.objects.values().filter(Q(full_name__icontains=search_param)  | Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city__name__icontains=search_param),is_active=True).filter(userprofessionaldetailsmodel__designation_id=request_data['filterByDesignation']).order_by('-userhealthdetailsmodel__age').all()[start:end]
         elif(request_data['sortBy'] == "Age (min to max)" and request_data['filterByDesignation'] != ""):
-           users_data = UserModel.objects.using('user_db').values().filter(userprofessionaldetailsmodel__designation_id = request_data['filterByDesignation'],is_active=True).order_by('userhealthdetailsmodel__age').all()[start:end] if search_param == "" else UserModel.objects.using('user_db').values().filter(Q(full_name__icontains=search_param) | Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city__name__icontains=search_param),is_active=True).filter(userprofessionaldetailsmodel__designation_id = request_data['filterByDesignation']).order_by('userhealthdetailsmodel__age').all()[start:end]
+           users_data = UserModel.objects.values().filter(userprofessionaldetailsmodel__designation_id = request_data['filterByDesignation'],is_active=True).order_by('userhealthdetailsmodel__age').all()[start:end] if search_param == "" else UserModel.objects.values().filter(Q(full_name__icontains=search_param) | Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city__name__icontains=search_param),is_active=True).filter(userprofessionaldetailsmodel__designation_id = request_data['filterByDesignation']).order_by('userhealthdetailsmodel__age').all()[start:end]
         elif(request_data['filterByDesignation'] != ""):
-           users_data = UserModel.objects.using('user_db').values().filter(userprofessionaldetailsmodel__designation_id = request_data['filterByDesignation'],is_active=True).all()[start:end] if search_param == "" else UserModel.objects.using('user_db').values().filter(Q(full_name__icontains=search_param)  | Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city__name__icontains=search_param),is_active=True).filter(userprofessionaldetailsmodel__designation_id =request_data['filterByDesignation']).all()[start:end]
+           users_data = UserModel.objects.values().filter(userprofessionaldetailsmodel__designation_id = request_data['filterByDesignation'],is_active=True).all()[start:end] if search_param == "" else UserModel.objects.values().filter(Q(full_name__icontains=search_param)  | Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city__name__icontains=search_param),is_active=True).filter(userprofessionaldetailsmodel__designation_id =request_data['filterByDesignation']).all()[start:end]
         else:
-           users_data = UserModel.objects.using('user_db').values().all() if search_param == "" else UserModel.objects.using('user_db').values().filter(Q(full_name__icontains=search_param)| Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city_name__icontains=search_param),is_active=True).all()
+           users_data = UserModel.objects.values().all() if search_param == "" else UserModel.objects.values().filter(Q(full_name__icontains=search_param)| Q(mobile_number__icontains=search_param) | Q(userlocationdetailsmodel__city_name__icontains=search_param),is_active=True).all()
         if(request_data['filterByCategory']) != "" : 
-            total_categories = CommitmentCategoryModel.objects.using('commitment_db').values().filter(name=request_data['filterByCategory']).all()
+            total_categories = CommitmentCategoryModel.objects.values().filter(name=request_data['filterByCategory']).all()
         else:
-            total_categories = CommitmentCategoryModel.objects.using('commitment_db').values().filter().all()
+            total_categories = CommitmentCategoryModel.objects.values().filter().all()
         for i in range(0,len(users_data)):
             if(total_categories.count() > 1):     
-                 commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id = users_data[i]['id']).all()
-                 done_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
-                 notDone_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id = users_data[i]['id'],is_done = False,is_updated = True).all()
-                 notUpdated_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id = users_data[i]['id'],is_done = False,is_updated = False).all()
+                 commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id']).all()
+                 done_commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
+                 notDone_commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],is_done = False,is_updated = True).all()
+                 notUpdated_commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],is_done = False,is_updated = False).all()
                  users_data[i]['commitments_details'] = {}
                  users_data[i]['commitments_details']['total_commitments'] = len(commitments_data)
                  users_data[i]['commitments_details']['total_commitments_done'] = len(done_commitments_data)
@@ -561,10 +564,10 @@ def getAllUsersDetails(request):
                  users_data[i]['commitments_details']['category_wise'] = []
             for j in range(0,total_categories.count()):
                 data = {}
-                commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
-                done_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
-                notDone_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
-                notUpdated_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
+                commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
+                done_commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
+                notDone_commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
+                notUpdated_commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
                 if(total_categories.count() == 1):
                     users_data[i]['commitments_details'] = {}
                     users_data[i]['commitments_details']['total_commitments'] = len(commitments_data)
@@ -578,21 +581,21 @@ def getAllUsersDetails(request):
                 data['total_commitments_not_done'] = len(notDone_commitments_data)
                 data['total_commitments_not_updated'] = len(notUpdated_commitments_data)
                 users_data[i]['commitments_details']['category_wise'].append(data)
-            city = UserLocationDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).first()
+            city = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).first()
             if city is not None:
-               users_data[i]['city_data'] = CitiesModel.objects.using('location_db').values().filter(id=city['city_id']).get()
+               users_data[i]['city_data'] = CitiesModel.objects.values().filter(id=city['city_id']).get()
                users_data[i]['city_data'].pop('created_at')
                users_data[i]['city_data'].pop('updated_at')
-            income_range_id = UserProfessionalDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).first()
+            income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).first()
             if income_range_id is not None:
-               users_data[i]['income_range_data'] = IncomeModel.objects.using('income_db').values().filter(id=income_range_id['income_range_id']).get()
-               users_data[i]['designation_data'] = DesignationModel.objects.using('designation_db').values().filter(id=income_range_id['designation_id']).get()
+               users_data[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
+               users_data[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()
                users_data[i]['designation_title'] = income_range_id['designation_title']
                users_data[i]['designation_data'].pop('created_at')
                users_data[i]['designation_data'].pop('updated_at')
                users_data[i]['income_range_data'].pop('created_at')
                users_data[i]['income_range_data'].pop('updated_at')
-            users_data[i]['age'] = UserHealthDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
+            users_data[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
             users_data[i].pop('created_at')
             users_data[i].pop('updated_at')
         if(request_data['sortBy'] == 'Commitment done (max to min)'):
@@ -621,24 +624,24 @@ def getAllUsersDetails(request):
 def getAllUnVerifiedUsers(request):
     """Function to get unverified users list"""
     try:
-        users_data = UserModel.objects.using('user_db').values().filter(is_verified=False,is_admin=False).order_by('-joining_date').all()
+        users_data = UserModel.objects.values().filter(is_verified=False,is_admin=False).order_by('-joining_date').all()
         for i in range(0,len(users_data)):
-            city = UserLocationDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()
+            city = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()
             print(city)
             if city is not None:
-               users_data[i]['city_data'] = CitiesModel.objects.using('location_db').values().filter(id=city['city_id']).get()
+               users_data[i]['city_data'] = CitiesModel.objects.values().filter(id=city['city_id']).get()
                users_data[i]['city_data'].pop('created_at')
                users_data[i]['city_data'].pop('updated_at')
-            income_range_id = UserProfessionalDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()
+            income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()
             if income_range_id is not None:
-               users_data[i]['income_range_data'] = IncomeModel.objects.using('income_db').values().filter(id=income_range_id['income_range_id']).get()
-               users_data[i]['designation_data'] = DesignationModel.objects.using('designation_db').values().filter(id=income_range_id['designation_id']).get()
+               users_data[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
+               users_data[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()
                users_data[i]['designation_title'] = income_range_id['designation_title']
                users_data[i]['designation_data'].pop('created_at')
                users_data[i]['designation_data'].pop('updated_at')
                users_data[i]['income_range_data'].pop('created_at')
                users_data[i]['income_range_data'].pop('updated_at')
-            users_data[i]['age'] = UserHealthDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
+            users_data[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
             users_data[i].pop('created_at')
             users_data[i].pop('updated_at')
         if(users_data.count() == 0):
@@ -660,7 +663,7 @@ def getAllUnVerifiedUsers(request):
 def getOverallPerformerOfTheWeek(request):
     """Function to get overall performer of the week"""
     try:
-        users_data = UserModel.objects.using('user_db').values().filter(is_active=True).all()
+        users_data = UserModel.objects.values().filter(is_active=True).all()
         today = datetime.now()
         start = today - timedelta(days=today.weekday())
         end = start + timedelta(days=6)
@@ -675,7 +678,7 @@ def getOverallPerformerOfTheWeek(request):
             print("lled")
             users_data[i]['commitments'] = []
             max_done_commitments['user_id'] = users_data[i]['id']
-            commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
+            commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
             max_done_commitments['max_commitments'] = len(commitment_data)
             print("dcd")
             if(len(commitment_data) != 0):
@@ -694,50 +697,50 @@ def getOverallPerformerOfTheWeek(request):
             ResponseData.success(
                 [], "No Data Found"),
             status=status.HTTP_201_CREATED)
-        total_categories = CommitmentCategoryModel.objects.using('commitment_db').values().filter().all()
+        total_categories = CommitmentCategoryModel.objects.values().filter().all()
         finalData = []
         for k in range(0,len(user_ids)):
-            users_data = UserModel.objects.using('user_db').values().filter(id=user_ids[k],is_active=True).all()
+            users_data = UserModel.objects.values().filter(id=user_ids[k],is_active=True).all()
             for i in range(0,len(users_data)):
-                commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id']).all()
+                commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id']).all()
                 users_data[i]['commitments_details'] = {}
                 users_data[i]['commitments_details']['total_commitments'] = commitments_data.count()
-                done_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
+                done_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
                 users_data[i]['commitments_details']['total_commitments_done'] = done_commitments_data.count()
-                notDone_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = True).all()
+                notDone_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = True).all()
                 users_data[i]['commitments_details']['total_commitments_not_done'] = notDone_commitments_data.count()
-                notUpdated_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = False).all()
+                notUpdated_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = False).all()
                 users_data[i]['commitments_details']['total_commitments_not_updated'] = notUpdated_commitments_data.count()
                 users_data[i]['commitments_details']['category_wise'] = []
                 for j in range(0,len(total_categories)):
                     data = {}
-                    commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
+                    commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
                     data['total_commitments'] = commitments_data.count()
-                    done_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
+                    done_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
                     data['total_commitments_done'] = done_commitments_data.count()
-                    notDone_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
+                    notDone_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
                     data['total_commitments_not_done'] = notDone_commitments_data.count()
-                    notUpdated_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
+                    notUpdated_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
                     data['total_commitments_not_updated'] = notUpdated_commitments_data.count()
                     data['category_name'] = total_categories[j]['name']
                     users_data[i]['commitments_details']['category_wise'].append(data)
                 users_data[i].pop('created_at')
                 users_data[i].pop('updated_at')
-                city_id = UserLocationDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()
+                city_id = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()
                 if city_id is not None:
-                  users_data[i]['city_data'] = CitiesModel.objects.using('location_db').values().filter(id=city_id['city_id']).get()
+                  users_data[i]['city_data'] = CitiesModel.objects.values().filter(id=city_id['city_id']).get()
                   users_data[i]['city_data'].pop('created_at')
                   users_data[i]['city_data'].pop('updated_at')
-                  income_range_id = UserProfessionalDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()
+                  income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()
                 if income_range_id is not None:
-                   users_data[i]['income_range_data'] = IncomeModel.objects.using('income_db').values().filter(id=income_range_id['income_range_id']).get()
-                   users_data[i]['designation_data'] = DesignationModel.objects.using('designation_db').values().filter(id=income_range_id['designation_id']).get()
+                   users_data[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
+                   users_data[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()
                    users_data[i]['designation_title'] = income_range_id['designation_title']
                    users_data[i]['designation_data'].pop('created_at')
                    users_data[i]['designation_data'].pop('updated_at')
                    users_data[i]['income_range_data'].pop('created_at')
                    users_data[i]['income_range_data'].pop('updated_at')
-                users_data[i]['age'] = UserHealthDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
+                users_data[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
             finalData.append(users_data[i])
         return Response(
             ResponseData.success(
@@ -753,13 +756,13 @@ def getOverallPerformerOfTheWeek(request):
 def getOverallPerformerOfTheWeekCategoryWise(request):
     """Function to get overall performer of the week"""
     try:
-        all_users_data = UserModel.objects.using('user_db').values().filter(is_active=True).all()
+        all_users_data = UserModel.objects.values().filter(is_active=True).all()
         today = datetime.now()
         start = today - timedelta(days=today.weekday())
         end = start + timedelta(days=6)
         sub_start_date = datetime.strptime(str(start).split(" ")[0], "%Y-%m-%d").date()
         sub_end_date = datetime.strptime(str(end).split(" ")[0], "%Y-%m-%d").date()
-        total_categories = CommitmentCategoryModel.objects.using('commitment_db').values().filter().all()
+        total_categories = CommitmentCategoryModel.objects.values().filter().all()
         final_next_data = []
         for index in range(0,len(total_categories)):
             final_data = []
@@ -770,7 +773,7 @@ def getOverallPerformerOfTheWeekCategoryWise(request):
                 }
                 all_users_data[i]['commitments'] = []
                 max_done_commitments['user_id'] = all_users_data[i]['id']
-                commitment_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id =all_users_data[i]['id'],is_done = True,is_updated = True,category = CommitmentCategoryModel(id=total_categories[index]['id'])).all()
+                commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id =all_users_data[i]['id'],is_done = True,is_updated = True,category = CommitmentCategoryModel(id=total_categories[index]['id'])).all()
                 value = len(commitment_data)
                 max_done_commitments['max_commitments'] = value
                 if(value!=0):
@@ -784,48 +787,48 @@ def getOverallPerformerOfTheWeekCategoryWise(request):
                         user_ids.append(newlist[j]['user_id'])
             finalData = []
             for k in range(0,len(user_ids)):
-                users_data = UserModel.objects.using('user_db').values().filter(id=user_ids[k],is_active=True).all()
+                users_data = UserModel.objects.values().filter(id=user_ids[k],is_active=True).all()
                 for i in range(0,len(users_data)):
-                    commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id']).all()
+                    commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id']).all()
                     users_data[i]['commitments_details'] = {}
                     users_data[i]['commitments_details']['total_commitments'] = commitments_data.count()
-                    done_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
+                    done_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
                     users_data[i]['commitments_details']['total_commitments_done'] = done_commitments_data.count()
-                    notDone_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = True).all()
+                    notDone_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = True).all()
                     users_data[i]['commitments_details']['total_commitments_not_done'] = notDone_commitments_data.count()
-                    notUpdated_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = False).all()
+                    notUpdated_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = False).all()
                     users_data[i]['commitments_details']['total_commitments_not_updated'] = notUpdated_commitments_data.count()
                     users_data[i]['commitments_details']['category_wise'] = []
                     for j in range(0,len(total_categories)):
                         data = {}
-                        commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
+                        commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
                         data['total_commitments'] = commitments_data.count()
-                        done_commitments_data_category = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
+                        done_commitments_data_category = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
                         data['total_commitments_done'] = done_commitments_data_category.count()
-                        notDone_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
+                        notDone_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
                         data['total_commitments_not_done'] = notDone_commitments_data.count()
-                        notUpdated_commitments_data = CommitmentModel.objects.using('commitment_db').values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
+                        notUpdated_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
                         data['total_commitments_not_updated'] = notUpdated_commitments_data.count()
                         data['category_name'] = total_categories[j]['name']
                         users_data[i]['commitments_details']['category_wise'].append(data)
                         users_data[i]['category_name'] = total_categories[index]['name']
                 users_data[i].pop('created_at')
                 users_data[i].pop('updated_at')
-                city_id = UserLocationDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()
+                city_id = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()
                 if city_id is not None:
-                  users_data[i]['city_data'] = CitiesModel.objects.using('location_db').values().filter(id=city_id['city_id']).get()
+                  users_data[i]['city_data'] = CitiesModel.objects.values().filter(id=city_id['city_id']).get()
                   users_data[i]['city_data'].pop('created_at')
                   users_data[i]['city_data'].pop('updated_at')
-                  income_range_id = UserProfessionalDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()
+                  income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()
                 if income_range_id is not None:
-                   users_data[i]['income_range_data'] = IncomeModel.objects.using('income_db').values().filter(id=income_range_id['income_range_id']).get()
-                   users_data[i]['designation_data'] = DesignationModel.objects.using('designation_db').values().filter(id=income_range_id['designation_id']).get()
+                   users_data[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
+                   users_data[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()
                    users_data[i]['designation_title'] = income_range_id['designation_title']
                    users_data[i]['designation_data'].pop('created_at')
                    users_data[i]['designation_data'].pop('updated_at')
                    users_data[i]['income_range_data'].pop('created_at')
                    users_data[i]['income_range_data'].pop('updated_at')
-                users_data[i]['age'] = UserHealthDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
+                users_data[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
                 finalData.append(users_data[i])
             for i in range(0,len(finalData)):
                final_next_data.append(finalData[i])
@@ -864,7 +867,7 @@ def updateProfile(request):
             is_medicine_ongoing = serializer.data["is_medicine_ongoing"]
             any_health_issues = serializer.data["any_health_issues"]
             is_subscribed = serializer.data["is_subscribed"]
-            userdata = UserModel.objects.using('user_db').filter(
+            userdata = UserModel.objects.filter(
                 id=user_id
             ).first()
             if not userdata:
@@ -893,7 +896,7 @@ def updateProfile(request):
                 # userdata.income_range = IncomeModel(id=income_range)
             userdata.save()
             updated_date = list(
-                UserModel.objects.using('user_db').values().filter(
+                UserModel.objects.values().filter(
                     id=user_id)
             )
             return Response(
@@ -920,7 +923,7 @@ def getUserProfileDetails(request):
         serializer = GetUserProfileSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["id"]
-            user = UserModel.objects.using('user_db').filter(
+            user = UserModel.objects.filter(
                 id=user_id,is_active=True).first()
             if not user:
                 return Response(
@@ -928,23 +931,23 @@ def getUserProfileDetails(request):
                         "User id is invalid"),
                     status=status.HTTP_201_CREATED,
                 )
-            user_details = UserModel.objects.using('user_db').values().filter(id=user_id,is_active=True).all()
+            user_details = UserModel.objects.values().filter(id=user_id,is_active=True).all()
             for i in range(0,len(user_details)):
                user_details[i].pop('created_at')
                user_details[i].pop('updated_at')
                user_details[i].pop('is_active')
-               city_id = UserLocationDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=user_details[i]['id'])).get()
+               city_id = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
                if city_id is not None:
-                user_details[i]['city_data'] = CitiesModel.objects.using('location_db').values().filter(id=city_id['city_id']).get()
+                user_details[i]['city_data'] = CitiesModel.objects.values().filter(id=city_id['city_id']).get()
                 user_details[i]['city_data'].pop('created_at')
                 user_details[i]['city_data'].pop('updated_at')
-               income_range_id = UserProfessionalDetailsModel.objects.using('user_db').values().filter(user=UserModel(id=user_details[i]['id'])).get()
+               income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
                print(income_range_id)
                if income_range_id is not None:
-                user_details[i]['income_range_data'] = IncomeModel.objects.using('income_db').values().filter(id=income_range_id['income_range_id']).get()
+                user_details[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
                 user_details[i]['income_range_data'].pop('created_at')
                 user_details[i]['income_range_data'].pop('updated_at')
-               check_data = RedeemPointsModel.objects.using('redeemPoints_db').values().filter().all()
+               check_data = RedeemPointsModel.objects.values().filter().all()
                for j in range(0,check_data.count()):
                   if(check_data[j]['to_user_id'] == user_id and check_data[j]['is_active']):
                    user_details[i]['redeem_point_data'] = check_data[j]
@@ -972,7 +975,7 @@ def makeUserAdmin(request):
         serializer = GetUserProfileSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["id"]
-            user = UserModel.objects.using('user_db').filter(
+            user = UserModel.objects.filter(
                 id=user_id,is_active=True).first()
             if not user:
                 return Response(
@@ -1004,22 +1007,22 @@ def delete_user_details(request):
     try:
         data = request.data
         user_id = data["user_id"]
-        is_id_valid = UserModel.objects.using('user_db').filter(id=user_id).first()
-        CommitmentModel.objects.using('commitment_db').filter(user_id=user_id).delete()
+        is_id_valid = UserModel.objects.filter(id=user_id).first()
+        CommitmentModel.objects.filter(user_id=user_id).delete()
         if not is_id_valid:
                return Response(
                    ResponseData.error("User id is invalid"),
                    status=status.HTTP_200_OK,
                )
-        UserSubscriptionDetailsModel.objects.using('user_db').filter(user_id=user_id).delete()
-        UserPaymentDetailsModel.objects.using('user_db').filter(user_id=user_id).delete()
-        UserGoogleSignInModel.objects.using('user_db').filter(user_id=user_id).delete()
-        UserLocationDetailsModel.objects.using('user_db').filter(user_id=user_id).delete()
-        UserProfessionalDetailsModel.objects.using('user_db').filter(user_id=user_id).delete()
-        UserHealthDetailsModel.objects.using('user_db').filter(user_id=user_id).delete()
-        RedeemPointsModel.objects.using('redeemPoints_db').filter(from_user_id=user_id).delete()
-        ReferralCodeModel.objects.using('referralCode_db').filter(user_id=user_id).delete()
-        UserModel.objects.using('user_db').filter(id=user_id).delete()
+        UserSubscriptionDetailsModel.objects.filter(user_id=user_id).delete()
+        UserPaymentDetailsModel.objects.filter(user_id=user_id).delete()
+        UserGoogleSignInModel.objects.filter(user_id=user_id).delete()
+        UserLocationDetailsModel.objects.filter(user_id=user_id).delete()
+        UserProfessionalDetailsModel.objects.filter(user_id=user_id).delete()
+        UserHealthDetailsModel.objects.filter(user_id=user_id).delete()
+        RedeemPointsModel.objects.filter(from_user_id=user_id).delete()
+        ReferralCodeModel.objects.filter(user_id=user_id).delete()
+        UserModel.objects.filter(id=user_id).delete()
         return Response(
             ResponseData.success_without_data("User details deleted successfully"),
             status=status.HTTP_201_CREATED)
