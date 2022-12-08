@@ -1,26 +1,19 @@
-# base image  
-FROM python:3.9.15 
-# setup environment variable  
-ENV DockerHOME=/home/app/commdem_warriors_app    
+# Pull base image
+FROM python:3.9
 
-# set work directory  
-RUN mkdir -p $DockerHOME  
-
-# where your code lives  
-WORKDIR $DockerHOME  
-
-# set environment variables  
+# Set environment variables
+ENV PIP_DISABLE_PIP_VERSION_CHECK 1
 ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1  
+ENV PYTHONUNBUFFERED 1
 
-# install dependencies  
-RUN pip install --upgrade pip  
+# Set work directory
+WORKDIR /commdem_warriors_same_database
 
-# copy whole project to your docker home directory. 
-COPY . $DockerHOME  
-# run this command to install all dependencies  
-RUN pip install -r requirements.txt  
-# port where the Django app runs  
-EXPOSE 8000  
-# start server  
-CMD python manage.py runserver 
+# Install dependencies
+COPY ./requirements.txt .
+RUN pip install -r requirements.txt
+
+# Copy project
+COPY . .
+
+CMD ["python3", "manage.py", "runserver","0.0.0.0:8000"]
