@@ -1,0 +1,11 @@
+{
+    "dev": {
+        "aws_region": "us-west-2",
+        "django_settings": "commdem_warriors_backend.settings",
+        "profile_name": "default",
+        "project_name": "commdem-warrior",
+        "runtime": "python3.9",
+        "s3_bucket": "zappa-xe2fq3xfc",
+        "slim_handler": true
+    }
+}
