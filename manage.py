@@ -3,18 +3,38 @@
 import os
 import sys
 from uuid import uuid4
+from firebase_admin import initialize_app
+from firebase_admin import credentials
+from oauth2client.service_account import ServiceAccountCredentials
+import requests
+cred = credentials.Certificate('/Users/apple/Downloads/commdem__firebase_credentials.json')
+BASE_URL = 'https://firebaseremoteconfig.googleapis.com'
+REMOTE_CONFIG_ENDPOINT = 'v1/projects/' + 'commdemwarriors' + '/remoteConfig'
+REMOTE_CONFIG_URL = BASE_URL + '/' + REMOTE_CONFIG_ENDPOINT
+SCOPES = ['https://www.googleapis.com/auth/firebase.remoteconfig']
 
+initialize_app(cred, 
+{
+"databaseURL": "https://commdemwarriors-default-rtdb.firebaseio.com/"
+})
 
-# FIREBASE_APP = initialize_app()
+# def _get_access_token():
+#   """Retrieve a valid access token that can be used to authorize requests.
+#   :return: Access token.
+#   """
+#   credentials = ServiceAccountCredentials.from_json_keyfile_name(
+#       '/Users/apple/Downloads/commdem__firebase_credentials.json', SCOPES)
+#   access_token_info = credentials.get_access_token()
+#   print(access_token_info.access_token)
+#   return access_token_info.access_token
 
-# Use a service account.
-# cred = credentials.Certificate('/Users/anirudh.chawla/Downloads/commdemwarriors-firebase-adminsdk-adstw-d344ebfefd.json')
+headers = {
+    'Authorization': 'Bearer ya29.c.b0Aa9Vdyn44G2xuIhfozXK9LreUIGbb6NNfgCWCyRiSvXZd0t1-RA7-quDC6TCrvsEcQ9EcsRFSh3yB8hgwv8SYFh2VJftGKRQW9jh2nK6FHrv9uU5PCGaJxCti2gph4muh1KhMg4JB2xDJtuclfnkDhsE1KvOrIBybIAd113nCtmakhaWWpF9GjKbjF2T8oibKWnF3JVfwctDlAdk7N01LL-qcbhJHZI'
+  }
+# resp = requests.get(REMOTE_CONFIG_URL, headers=headers)
 
-# firebase_admin.initialize_app(cred, 
-# {
-# "databaseURL": "commdemwarriors.firebaseio.com/"
-# })
-
+# print("data from api")
+# print(resp.content)
 
 def main():
     """Run administrative tasks."""

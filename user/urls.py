@@ -20,5 +20,4 @@ urlpatterns = [
     path('getAllUnVerifiedUsers/', views.getAllUnVerifiedUsers, name="getAllUnVerifiedUsers"),
     path('getOverallPerformerOfTheWeek/', views.getOverallPerformerOfTheWeek, name="getOverallPerformerOfTheWeek"),   
     path('getOverallPerformerOfTheWeekCategoryWise/', views.getOverallPerformerOfTheWeekCategoryWise, name="getOverallPerformerOfTheWeekCategoryWise"),
-   
 ]
