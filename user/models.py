@@ -108,3 +108,10 @@ class UserHealthDetailsModel(models.Model):
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     is_active = models.BooleanField(default=False)
     objects = models.Manager()
+
+class keysToUpdateInFrontEndModel(models.Model):
+    """Model for storing update of database in frontend"""
+    id = models.AutoField(primary_key=True)
+    is_new_commitment_category_added = models.BooleanField(default=False)
+    is_commitment_table_updated = models.BooleanField(default=False)
+    objects = models.Manager()

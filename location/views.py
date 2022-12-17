@@ -1,4 +1,5 @@
 from rest_framework.decorators import api_view
+from firebase.firebase import send_to_firebase
 from location.models import CitiesModel, CountriesDialCodeModel,StatesModel,CountriesModel
 from rest_framework.response import Response
 from response import Response as ResponseData
@@ -33,6 +34,7 @@ def addCountryDialCodes(request):
 def get_all_countries(request):
     """Function to get all countries details"""
     try:
+        # send_to_firebase()
         countries_data = CountriesModel.objects.values().filter().all()
         for i in range(0,len(countries_data)):
             countries_data[i].pop('created_at')

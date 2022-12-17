@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from graphene_django.views import GraphQLView
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,5 +29,9 @@ urlpatterns = [
     path('notifications_app/', include("notifications.urls")),
     path('referral_code_app/', include("referralCode.urls")),
     path('location_app/', include("location.urls")),
+    path('food_app/', include("food.urls")),
+    path('voice_assistant_app/', include("voiceAssistant.urls")),
     path("graphql", GraphQLView.as_view(graphiql=True)),
 ]
+
+urlpatterns += staticfiles_urlpatterns()

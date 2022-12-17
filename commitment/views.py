@@ -10,7 +10,7 @@ from designation.models import DesignationModel
 from income.models import IncomeModel
 from response import Response as ResponseData
 from rest_framework import status
-from user.models import UserLocationDetailsModel, UserModel, UserProfessionalDetailsModel
+from user.models import UserLocationDetailsModel, UserModel, UserProfessionalDetailsModel, keysToUpdateInFrontEndModel
 from django.db.models import Q
 
 # Create your views here.
@@ -64,9 +64,12 @@ def add_new_commitment(request):
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
         CommitmentModel.objects.bulk_create(final_data)
+        keysToUpdateInFrontEndModel.objects.update(
+                is_commitment_table_updated = True
+            )
         return Response(
-            ResponseData.success_without_data(
-                 "Commitment added successfully"),
+            ResponseData.success_without_data_with_commitment_update(
+                 "Commitment added successfully",True),
             status=status.HTTP_201_CREATED,
         )
     except Exception as exception:
@@ -90,7 +93,7 @@ def add_new_commitment_category(request):
                 ResponseData.success(
                     [], "Commitment category added successfully"),
                 status=status.HTTP_201_CREATED,
-            )
+            )   
         for error in serializer.errors:
             print(serializer.errors[error][0])
         return Response(
@@ -156,7 +159,7 @@ def get_cause_of_category_success_or_failure(request):
             category_id = serializer.data['category']
             is_success = serializer.data['is_success']
             category = CommitmentCategoryModel.objects.filter(id=category_id).first()
-            if(category_id == 2 or category_id == 3):
+            if(str(category.name).__contains__('food') or str(category.name).__contains__('water')):
                 evening_time = '19:00:00'
                 evening_time_format = datetime.strptime(evening_time, '%H:%M:%S')
                 if(datetime.now().time() < evening_time_format.time()):
@@ -220,6 +223,7 @@ def add_new_commitment_name(request):
                 category=CommitmentCategoryModel(id=category_id)
             )
             new_commitment_name.save()
+
             return Response(
                 ResponseData.success(
                     [], "Commitment name added successfully"),
@@ -250,7 +254,7 @@ def get_commitment_category_with_name(request):
                 CommitmentCategoryModel.objects.values().filter())
                 for i in range(0,len(commitment_category_data)):
                     commitment_category_data[i]['commitment_category_name_data'] = list(
-                CommitmentNameModel.objects.values().filter(category=CommitmentCategoryModel(id=commitment_category_data[i]['id'])))
+                CommitmentNameModel.objects.values().filter(category_id=commitment_category_data[i]['id']))
                     for j in range(0,len(commitment_category_data[i]['commitment_category_name_data'])):
                         commitment_category_data[i]['commitment_category_name_data'][j].pop('created_at')
                         commitment_category_data[i]['commitment_category_name_data'][j].pop('updated_at')
@@ -462,9 +466,13 @@ def get_other_users_commitments(request):
                    ResponseData.success(
                        [], "No commitment found"),
                    status=status.HTTP_201_CREATED)
+        isCommitmentTableUpdated = keysToUpdateInFrontEndModel.objects.get().is_commitment_table_updated
+        keysToUpdateInFrontEndModel.objects.update(
+                is_commitment_table_updated = False
+            )
         return Response(
-                   ResponseData.success(
-                       final_commitment_data, "Commitments fetched successfully"),
+                   ResponseData.success_with_commitment_update(
+                       final_commitment_data, "Commitments fetched successfully",isCommitmentTableUpdated),
                    status=status.HTTP_201_CREATED)
     except Exception as exception:
         return Response(

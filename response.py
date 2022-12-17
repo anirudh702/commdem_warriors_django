@@ -16,6 +16,13 @@ class Response:
         return {"success": True, "data": data, "message": message}
 
     @classmethod
+    def success_with_commitment_update(cls, data, message,isCommitmentUpdated):
+        """
+        Common success method for API response
+        """
+        return {"success": True, "data": data, "message": message,"isCommitmentUpdated" : isCommitmentUpdated}
+
+    @classmethod
     def success_for_referral_code(cls, message,referralCode):
         """
         Common success method for API response
@@ -28,6 +35,13 @@ class Response:
         Common success_without_data method for API response
         """
         return {"success": True, "message": message}
+
+    @classmethod
+    def success_without_data_with_commitment_update(cls, message,isCommitmentUpdated):
+        """
+        Common success_without_data method for API response
+        """
+        return {"success": True, "message": message,'isCommitmentUpdated' : isCommitmentUpdated}
 
     @classmethod
     def error(cls, error):

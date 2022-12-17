@@ -10,6 +10,7 @@ class UserSignUpSerializer(serializers.ModelSerializer):
     """Serializer for User sign up details"""
     id = serializers.IntegerField(default=None)
     income_range = serializers.IntegerField(default=None)
+    virtual_assistant_language_id = serializers.IntegerField(default=None)
     referral_code = serializers.IntegerField(default=None)
     player_id = serializers.CharField(default=None)
     user_uid = serializers.CharField(default=None)

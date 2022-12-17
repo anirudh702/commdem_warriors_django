@@ -14,6 +14,12 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+import gtts
+
+# translated_text = translator.translate('Hi tanu, please listen to me I know yesterday was tough day for you, but I just want you to ask yourself that do I really dont have 20 min to do exercise ?',dest='bn')
+tts = gtts.gTTS('hello sir, can I show you flow of features in our application ?',lang = 'en',slow=False,tld='co.in')
+tts.save("static/hello1.mp3")
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,7 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -52,7 +58,9 @@ INSTALLED_APPS = [
     'referralCode',
     'notifications',
     'location',
-    'graphene_django'
+    'graphene_django',
+    'food',
+    'voiceAssistant'
 ]
 
 MIDDLEWARE = [
@@ -79,6 +87,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'libraries': {
+                'staticfiles': 'django.templatetags.static',
+            }
         },
     },
 ]

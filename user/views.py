@@ -22,7 +22,9 @@ from random import randint
 import requests as R
 from dateutil.relativedelta import relativedelta
 from dotenv import load_dotenv
-import os 
+import os
+
+from voiceAssistant.models import userPreferredVoiceLanguageModel, voiceAssistantLanguagesModel 
 
 load_dotenv()
 
@@ -47,6 +49,7 @@ def signup(request):
             mobile_number = serializer.data['mobile_number']
             password = serializer.data["password"]
             email = serializer.data['email']
+            virtual_assistant_language_id = serializer.data['virtual_assistant_language_id']
             birth_date = serializer.data['birth_date']
             profile_pic = request.FILES['profile_pic'] if'profile_pic' in request.FILES else ''
             referral_code = serializer.data['referral_code'] if 'referral_code' in data else 0
@@ -123,6 +126,11 @@ def signup(request):
                 any_health_issues=any_health_issues,
             )
             new_user_health_details.save()
+            user_language_data = userPreferredVoiceLanguageModel.objects.create(
+                user=UserModel(id=new_user.id),
+                voice_assistant_language=voiceAssistantLanguagesModel(id=virtual_assistant_language_id),
+            )
+            user_language_data.save()
             generated_referral_code = random_with_N_digits(6)
             new_referral_code = ReferralCodeModel.objects.create(
                 user_id=new_user.id,
@@ -947,6 +955,10 @@ def getUserProfileDetails(request):
                 user_details[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
                 user_details[i]['income_range_data'].pop('created_at')
                 user_details[i]['income_range_data'].pop('updated_at')
+                user_details[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()
+                user_details[i]['designation_title'] = income_range_id['designation_title']
+                user_details[i]['designation_data'].pop('created_at')
+                user_details[i]['designation_data'].pop('updated_at')
                check_data = RedeemPointsModel.objects.values().filter().all()
                for j in range(0,check_data.count()):
                   if(check_data[j]['to_user_id'] == user_id and check_data[j]['is_active']):
@@ -954,6 +966,7 @@ def getUserProfileDetails(request):
                    user_details[i]['redeem_point_data'].pop('updated_at')
                    user_details[i]['redeem_point_data'].pop('created_at')
                    user_details[i]['redeem_point_data'].pop('from_user_ids')
+               user_details[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()['age']
             return Response(
                 ResponseData.success(
                     user_details, " User details fetched successfully"),
