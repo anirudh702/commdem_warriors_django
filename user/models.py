@@ -2,6 +2,9 @@ from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 import django
 
+from designation.models import DesignationModel
+from income.models import IncomeModel
+
 # Create your models here.
 class UserModel(models.Model):
     """Model for user data"""
@@ -85,10 +88,10 @@ class UserProfessionalDetailsModel(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
     designation_title = models.CharField(max_length=50,null=False,blank=False,default="")
-    # designation = models.ForeignKey(DesignationModel, on_delete=models.CASCADE,null=True)
-    designation_id=models.IntegerField(blank=True,default=0)
-    # income_range = models.ForeignKey(IncomeModel, on_delete=models.CASCADE,null=True)
-    income_range_id=models.IntegerField(blank=True,default=0)
+    designation = models.ForeignKey(DesignationModel, on_delete=models.CASCADE,null=True)
+    # designation_id=models.IntegerField(blank=True,default=0)
+    income_range = models.ForeignKey(IncomeModel, on_delete=models.CASCADE,null=True)
+    # income_range_id=models.IntegerField(blank=True,default=0)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     is_active = models.BooleanField(default=False)

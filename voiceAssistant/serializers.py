@@ -3,7 +3,7 @@
 from dataclasses import fields
 from rest_framework import serializers
 
-from voiceAssistant.models import userPreferredVoiceLanguageModel, voiceAssistantLanguagesModel
+from voiceAssistant.models import userCommitmentVoiceBeforeUpdateModel, userPreferredVoiceLanguageModel, voiceAssistantLanguagesModel
 
 
 class AddNewLanguageSerializer(serializers.ModelSerializer):
@@ -20,9 +20,10 @@ class GetAllLanguagesSerializer(serializers.ModelSerializer):
         model = voiceAssistantLanguagesModel
         exclude = ["created_at","updated_at"]
 
-class AddUserPreferredLanguageSerializer(serializers.ModelSerializer):
-    """Serializer for adding user preferred language"""
+class AddUserCommitmentVoiceFileSerializer(serializers.ModelSerializer):
+    """Serializer for adding user commitment voice file"""
+    user_id = serializers.IntegerField()
     class Meta:
         """Meta class to change behaviour of model fields"""
-        model = userPreferredVoiceLanguageModel
-        exclude = ["created_at","updated_at"]
+        model = userCommitmentVoiceBeforeUpdateModel
+        fields = ["user_id"]

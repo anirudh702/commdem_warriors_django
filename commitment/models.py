@@ -21,6 +21,9 @@ class CommitmentCategoryModel(models.Model):
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
 
+    def __str__(self):
+         return self.name
+
 class CommitmentNameModel(models.Model):
     """Model for commitment name data"""
     id = models.AutoField(primary_key=True)
@@ -32,6 +35,8 @@ class CommitmentNameModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+    def __str__(self):
+         return self.name
 
 class CauseOfCategorySuccessOrFailureModel(models.Model):
     """Model for cause of category success/failure data"""
@@ -42,6 +47,8 @@ class CauseOfCategorySuccessOrFailureModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+    def __str__(self):
+         return self.title
 
 class CommitmentModel(models.Model):
     """Model for commitment data"""
@@ -56,6 +63,8 @@ class CommitmentModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+    # def __str__(self):
+    #      return self.commitment_name
 
 class ReasonBehindCommitmentSuccessOrFailureForUser(models.Model):
     """Model for storing reasons behind success or failure of a particular commitment of a user"""
@@ -67,6 +76,8 @@ class ReasonBehindCommitmentSuccessOrFailureForUser(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+    def __str__(self):
+         return self.cause_of_category_success_or_failure__title
 
 
 class CommitmentGraphDataModel(models.Model):

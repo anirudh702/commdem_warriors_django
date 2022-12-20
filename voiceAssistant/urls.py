@@ -12,4 +12,5 @@ urlpatterns = [
     path('get_all_languages/', views.get_all_languages, name="get_all_languages"),  
     path('addUserPrefferedLanguage/', views.addUserPrefferedLanguage, name="addUserPrefferedLanguage"),
     path('get_user_preferred_language/', views.get_user_preferred_language, name="get_user_preferred_language"),
+    path('addUserCommitmentVoiceBeforeUpdate/', views.addUserCommitmentVoiceBeforeUpdate, name="addUserCommitmentVoiceBeforeUpdate"),
 ]

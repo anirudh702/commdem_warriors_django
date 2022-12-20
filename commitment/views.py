@@ -49,7 +49,7 @@ def add_new_commitment(request):
             print(f"commitment_category_data {commitment_category_data}")
             already_exists = False
             for i in range(0,commitment_category_data.count()):
-                if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=0)).split(' ')[0]):
+                if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=1)).split(' ')[0]):
                     already_exists = True
                     break
             if already_exists:
@@ -59,7 +59,7 @@ def add_new_commitment(request):
                 )
             final_data.append(CommitmentModel(
                 user_id=user_id,
-                commitment_date=datetime.now() + timedelta(days=0),
+                commitment_date=datetime.now() + timedelta(days=1),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
@@ -299,7 +299,7 @@ def get_commitment_name(request):
             if category_id is None:
                 commitment_name_data = list(
                 CommitmentNameModel.objects.values().filter())
-                for i in range(0,commitment_name_data.count()):
+                for i in range(0,len(commitment_name_data)):
                     commitment_name_data[i].pop('created_at')
                     commitment_name_data[i].pop('updated_at')
                 return Response(
@@ -308,7 +308,7 @@ def get_commitment_name(request):
                     status=status.HTTP_201_CREATED)
             else:
                 commitment_name_data = CommitmentNameModel.objects.values().filter(category = CommitmentCategoryModel(id=category_id)).all()
-                for i in range(0,commitment_name_data.count()):
+                for i in range(0,len(commitment_name_data)):
                     commitment_name_data[i].pop('created_at')
                     commitment_name_data[i].pop('updated_at')
                 return Response(
