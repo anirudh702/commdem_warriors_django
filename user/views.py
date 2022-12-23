@@ -9,7 +9,7 @@ from notifications.views import send_notification_to_admin
 from redeemPoints.models import RedeemPointsModel
 from referralCode.models import ReferralCodeModel
 from subscription.models import SubscriptionModel
-from user.models import UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel
+from user.models import UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel
 from rest_framework.response import Response
 from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetUserProfileSerializer, GetUserSubscriptionSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
@@ -23,9 +23,11 @@ import requests as R
 from dateutil.relativedelta import relativedelta
 from dotenv import load_dotenv
 import os
-
+from django.db.models import Sum, F
+from django.db.models.expressions import Window
+from django.db.models.functions import Rank
 from voiceAssistant.models import userPreferredVoiceLanguageModel, voiceAssistantLanguagesModel 
-
+import razorpay
 load_dotenv()
 
 def random_with_N_digits(n):
@@ -922,6 +924,15 @@ def updateProfile(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+def giveCashbackToUser():
+    client = razorpay.Client(auth=("rzp_test_4o94Sjvz44DNhx", "CXi3eeltjaUavtFLid55dnZw"))
+    client.payment.refund('pay_Kufz1VEQSIbKdA',{
+  "amount": "1",
+  "speed": "optimum",
+  "receipt": "Receipt No. 31"
+})
+
+
 @api_view(["POST"])
 def getUserProfileDetails(request):
     """Function to get user profile details based on user id"""
@@ -941,6 +952,20 @@ def getUserProfileDetails(request):
                 )
             user_details = UserModel.objects.values().filter(id=user_id,is_active=True).all()
             for i in range(0,len(user_details)):
+               user_details[i]['total_commitments'] = CommitmentModel.objects.filter(user_id=user_details[i]['id']).count()
+               user_details[i]['done_commitments'] = CommitmentModel.objects.filter(user_id=user_details[i]['id'],is_done=True,is_updated=True).count()
+               user_details[i]['star_rating'] = (user_details[i]['done_commitments']/user_details[i]['total_commitments'])*5
+               users_data = UserModel.objects.values().filter(is_active=True).all()
+               for j in range(0,len(users_data)):
+                users_data[j]['total_commitments_done'] = CommitmentModel.objects.filter(user_id=users_data[j]['id'],is_done=True,is_updated=True).count()
+               users_sorted_data = sorted(users_data, key=lambda d: d['total_commitments_done'],reverse=True)
+               for j in range(0,len(users_sorted_data)):
+                if(users_sorted_data[j]['id'] == user_id):
+                    user_details[i]['user_ranking'] = j+1
+                    break
+            #    user_details[i]['cashback'] = UserCashbackModel.objects.values().filter(user_id=user_details[i]['id']).get().amount
+            #    giveCashbackToUser()
+               user_details[i]['cashback'] = 0.0
                user_details[i].pop('created_at')
                user_details[i].pop('updated_at')
                user_details[i].pop('is_active')
@@ -950,8 +975,7 @@ def getUserProfileDetails(request):
                 user_details[i]['city_data'].pop('created_at')
                 user_details[i]['city_data'].pop('updated_at')
                income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
-               print(income_range_id)
-               if income_range_id is not None:
+               if income_range_id['income_range_id'] is not None:
                 user_details[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
                 user_details[i]['income_range_data'].pop('created_at')
                 user_details[i]['income_range_data'].pop('updated_at')

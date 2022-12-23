@@ -1,52 +1,26 @@
-version: "3"
+version: "3.9"
+
 services:
   web:
     build: .
-    command: python3 manage.py runserver 127.0.0.1:5432
+    command: python3 /commdem_warriors_same_database/manage.py runserver 0.0.0.0:8001
     volumes:
       - .:/commdem_warriors_same_database
     ports:
-      - 8000:8000
+      - 8001:8000
     depends_on:
       - db
-    # extra_hosts:
-    #   - "host.docker.internal:127.0.0.1"
-
   db:
-    image: postgres
-    container_name: postgresql_db
-    restart: always
-    volumes:
-      - ./data/db/:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: test_db
-    ports:
-      - "5432:5432"
-    networks:
-     app_net:
-        ipv4_address: 192.168.0.2
-  
-  pgadmin:
-    container_name: pgadmin4
     image: dpage/pgadmin4
-    restart: always
     volumes:
-      - ./data/pgadmin-data/:/var/lib/pgadmin
+      - postgres_data:/var/lib/postgresql/data/
     environment:
-      PGADMIN_DEFAULT_EMAIL: root@root.com
-      PGADMIN_DEFAULT_PASSWORD: root
-    ports:
-      - "5050:80"
-    networks:
-     app_net:
-        ipv4_address: 192.168.0.3
-  
-networks:
-  app_net:
-     ipam:
-        driver: default
-        config:
-           - subnet: "192.168.0.0/24"
-             gateway: 192.168.0.1 
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123
+      
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+
+
+volumes:
+  postgres_data:

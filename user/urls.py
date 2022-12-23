@@ -8,7 +8,7 @@ from user import views
 urlpatterns = [
     path('signup/', views.signup, name="signup"),
     path('delete_user/', views.delete_user_details, name="delete_user_details"),
-    path('signin/', views.signin, name="signin"),  
+    path('signin/', views.signin, name="signin"),
     path('makeUserAdmin/', views.makeUserAdmin, name="makeUserAdmin"),  
     path('updateProfile/', views.updateProfile, name="update_profile"),  
     path('getUserProfile/', views.getUserProfileDetails, name="getUserProfileDetails"),  

@@ -118,3 +118,12 @@ class keysToUpdateInFrontEndModel(models.Model):
     is_new_commitment_category_added = models.BooleanField(default=False)
     is_commitment_table_updated = models.BooleanField(default=False)
     objects = models.Manager()
+
+class UserCashbackModel(models.Model):
+    """Model for storing update of database in frontend"""
+    id = models.AutoField(primary_key=True)
+    user_id = models.IntegerField(blank=True,default=0)
+    amount = models.FloatField(blank=True,default=0.0)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()
