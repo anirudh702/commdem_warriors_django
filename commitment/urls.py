@@ -21,6 +21,7 @@ urlpatterns = [
     path('get_user_commitments_by_start_end_date/', views.get_user_commitments_by_start_end_date_only, name="get_user_commitments_by_start_end_date_only"),
     path('get_group_commitments_by_start_end_date/', views.get_group_commitments_by_start_end_date_only, name="get_group_commitments_by_start_end_date_only"),
     path('update_commitment/', views.update_commitment, name="update_commitment"),
+    path('update_exercise_model/', views.update_exercise_model, name="update_exercise_model"),
     path('add_cause_of_category_success_or_failure/', views.add_cause_of_category_success_or_failure, name="add_cause_of_category_success_or_failure"),
     path('get_cause_of_category_success_or_failure/', views.get_cause_of_category_success_or_failure, name="get_cause_of_category_success_or_failure"),
 ]

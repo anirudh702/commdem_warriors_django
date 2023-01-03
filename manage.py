@@ -5,6 +5,9 @@ import sys
 from uuid import uuid4
 from firebase_admin import initialize_app
 from firebase_admin import credentials
+import os
+import razorpay
+
 # from oauth2client.service_account import ServiceAccountCredentials
 import requests
 # cred = credentials.Certificate('/Users/apple/Downloads/commdem__firebase_credentials.json')
@@ -37,6 +40,7 @@ headers = {
 # print(resp.content)
 
 def main():
+    # giveCashbackToUser()
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'commdem_warriors_backend.settings')
     try:
@@ -48,8 +52,17 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
     execute_from_command_line(sys.argv)
+    
 
+def giveCashbackToUser():
+    print("called")
+    client = razorpay.Client(auth=("rzp_live_pYIOPg1yeQloxJ", "31W6Aln43pCnyKQNS0qYpT6d"))
+    client.payment.refund('pay_KzNQ8ycrLgs6oo',{
+  "amount": "100",
+  "speed": "optimum",
+  "receipt": "Receipt No. 34"
+})
 
 if __name__ == '__main__':
     main()
-
+    

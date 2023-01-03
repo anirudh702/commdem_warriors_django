@@ -3,9 +3,10 @@ from rest_framework.response import Response
 from designation.models import DesignationModel
 from response import Response as ResponseData
 from rest_framework import status
-from subscription.models import SubscriptionModel
+from subscription.models import SubscriptionLevelModel, SubscriptionModel
 from subscription.serializers import AddSubscriptionSerializer, GetSubscriptionSerializer
 from user.models import UserPaymentDetailsModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel
+from django.db.models import Q
 
 # Create your views here.
 
@@ -104,9 +105,15 @@ def get_all_subscriptions(request):
                    )
                 subscription_details = list(
                 SubscriptionModel.objects.values().filter(
-                    designation_id=is_user_id_valid.designation_id
-                ))
+                    Q(designation_id=is_user_id_valid.designation_id) | Q(designation_id=0)
+                ).order_by('amount'))
                 for i in range(0,len(subscription_details)):
+                    if(subscription_details[i]['level_name_id'] is not None):
+                     subscription_details[i]['level'] = SubscriptionLevelModel.objects.values().filter(id=subscription_details[i]['level_name_id']).get()['level']
+                    else:
+                     subscription_details[i]['level'] = 'basic'
+                     subscription_details[i]['level_name_id'] = 0
+                    #  subscription_details[i].pop('level_name_id')
                     subscription_details[i].pop('created_at')
                     subscription_details[i].pop('updated_at')
                 return Response(
@@ -151,6 +158,7 @@ def get_past_subscriptions_of_user(request):
                    )
                     subscription_details[0].pop('updated_at')
                     subscription_details[0].pop('created_at')
+                    subscription_details[0]['level_name_id'] = 0
                     payment_details[i].pop('updated_at')
                     payment_details[i].pop('created_at')
                     payment_details[i]['subscription_details'] = subscription_details[0]

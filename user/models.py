@@ -37,7 +37,6 @@ class UserPaymentDetailsModel(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
     payment_id = models.CharField(max_length=50)
-    # subscription = models.ForeignKey('subscription.SubscriptionModel', on_delete=models.CASCADE,null=True)
     subscription_id=models.IntegerField(blank=True,default=0)
     date_of_payment = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)

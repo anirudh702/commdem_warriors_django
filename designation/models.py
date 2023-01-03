@@ -12,3 +12,5 @@ class DesignationModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+    def __str__(self):
+         return self.title

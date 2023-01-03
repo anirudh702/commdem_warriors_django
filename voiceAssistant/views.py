@@ -1,3 +1,4 @@
+import os
 import django
 import gtts
 from rest_framework.decorators import api_view
@@ -10,9 +11,13 @@ from rest_framework import status
 from user.models import UserHealthDetailsModel, UserModel, UserProfessionalDetailsModel
 from datetime import datetime, timedelta
 from django.utils.timezone import localtime, now
-from voiceAssistant.models import userCommitmentVoiceBeforeUpdateModel, userPreferredVoiceLanguageModel, voiceAssistantLanguagesModel
-from voiceAssistant.serializers import AddUserCommitmentVoiceFileSerializer
+from voiceAssistant.models import userCommitmentVoiceBeforeUpdateModel, userPreferredVoiceLanguageModel, voiceAssistantBeforeUpdateMessageModel, voiceAssistantLanguagesModel, voiceAssistantAfterUpdateMessageModel
+from voiceAssistant.serializers import AddUserCommitmentVoiceFileSerializer, AddVoiceAssistantAfterUpdateMessageSerializer, AddVoiceAssistantBeforeUpdateMessageSerializer
 from googletrans import Translator
+from django.db.models import Q
+from background_task import background
+from commdem_warriors_backend import celery_app
+
 # Create your views here.
 
 @api_view(["POST"])
@@ -41,6 +46,65 @@ def addNewLanguage(request):
         )
 
 @api_view(["POST"])
+def addVoiceAssistantMessageAfterUpdate(request):
+    """Function to add voice assistant message after update"""
+    try:
+        data = request.data
+        final_data = []
+        for i in range(0,len(data)):
+            final_data.append(voiceAssistantAfterUpdateMessageModel(
+                commitment_category_id=data[i]['commitment_category_id'],
+                # occupation_id=data[i]['occupation_id'],
+                # commitment_name_id=data[i]['commitment_name_id'],
+                # no_of_week_from_date_of_joining=data[i]['no_of_week_from_date_of_joining'],
+                # age_group=data[i]['age_group'],
+                reason_behind_commitment_success_or_failure=data[i]['reason_behind_commitment_success_or_failure'],
+                # no_of_times_this_reason_in_current_week=data[i]['no_of_times_this_reason_in_current_week'],
+                range_of_success_of_exercise_in_this_week=data[i]['range_of_success_of_exercise_in_this_week'],
+                # is_it_weekend=data[i]['is_it_weekend'],
+                voice_assistant_message=data[i]['voice_assistant_message'],
+                ))
+        voiceAssistantBeforeUpdateMessageModel.objects.bulk_create(final_data)
+        return Response(
+            ResponseData.success(
+                [], "Voice assistant message added successfully"),
+            status=status.HTTP_201_CREATED,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def addVoiceAssistantMessageBeforeUpdate(request):
+    """Function to add voice assistant message before update"""
+    try:
+        data = request.data
+        final_data = []
+        for i in range(0,len(data)):
+            final_data.append(voiceAssistantBeforeUpdateMessageModel(
+                commitment_category_id=data[i]['commitment_category_id'],
+                occupation_id=data[i]['occupation_id'],
+                # commitment_name_id=data[i]['commitment_name_id'],
+                # no_of_week_from_date_of_joining=data[i]['no_of_week_from_date_of_joining'],
+                age_group=data[i]['age_group'],
+                no_of_times_in_current_week=data[i]['no_of_times_in_current_week'],
+                range_of_success_of_commitment_name_in_this_week=data[i]['range_of_success_of_commitment_name_in_this_week'],
+                is_it_weekend=data[i]['is_it_weekend'],
+                voice_assistant_message=data[i]['voice_assistant_message'],
+                ))
+        voiceAssistantBeforeUpdateMessageModel.objects.bulk_create(final_data)
+        return Response(
+            ResponseData.success(
+                [], "Voice assistant message added successfully"),
+            status=status.HTTP_201_CREATED,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
 def get_all_languages(request):
     """Function to get all languages details"""
     try:
@@ -53,6 +117,23 @@ def get_all_languages(request):
         return Response(
             ResponseData.success(
                 languages_data, "Languages details fetched successfully"),
+            status=status.HTTP_201_CREATED)
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def get_voice_assistant_message_before_update(request):
+    """Function to get voice assistant message before update"""
+    try:
+        languages_data = voiceAssistantBeforeUpdateMessageModel.objects.values().filter().all()
+        for i in range(0,len(languages_data)):
+            languages_data[i].pop('created_at')
+            languages_data[i].pop('updated_at')
+        return Response(
+            ResponseData.success(
+                languages_data, "Voice assistant message fetched successfully"),
             status=status.HTTP_201_CREATED)
     except Exception as exception:
         return Response(
@@ -335,3 +416,120 @@ def addUserCommitmentVoiceBeforeUpdate(request):
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+@api_view(["POST"])
+def addUserVoiceForNextDayCommitment(request):
+    """Function to add user voice needed for next day commitment"""
+    try:
+        data = request.data
+        user_id = data['user_id']
+        user_data = UserModel.objects.values().filter(id=user_id).get()
+        if user_data is None:
+            return Response(
+            ResponseData.success_without_data(
+                "User id is invalid"),
+            status=status.HTTP_201_CREATED,
+            )
+        today = datetime.now()
+        next_day_1 = today + timedelta(days=1)
+        next_day_date = datetime.strptime(str(next_day_1).split(" ")[0], "%Y-%m-%d").date()
+        next_day_exercise_commitment = CommitmentModel.objects.values().filter(
+            Q(commitment_date__icontains=next_day_date)).filter(user_id=user_id,category__name='Exercise').all()
+        if len(next_day_exercise_commitment) == 0:
+            return Response(
+            ResponseData.success_without_data(
+                "No exercise commitment found for tomorrow"),
+            status=status.HTTP_201_CREATED,
+        ) 
+        # commitment_category_name = 'Exercise'
+        age_group = ''
+        user_professional_detail = UserProfessionalDetailsModel.objects.values().filter(user_id=user_id).get()
+        occupation_id = user_professional_detail['designation_id']
+        user_health_detail = UserHealthDetailsModel.objects.values().filter(user_id=user_id).get()
+        age = user_health_detail['age']
+        if age < 20:
+            age_group = '10-20'
+        elif age >= 20 and age <=30:
+            age_group = '20-30'
+        elif age > 30:
+            age_group = '30+'
+        # date = datetime.date.today()
+        start_week = today - timedelta(datetime.now().weekday())
+        end_week = start_week + timedelta(7)
+        no_of_times_in_current_week = len(CommitmentModel.objects.values().filter(
+            user_id=user_id,category__name='Exercise',created_at__range=[start_week, end_week]).all())
+        range_of_success_of_commitment_name_in_this_week = ''
+        no_of_success_in_current_week = len(CommitmentModel.objects.values().filter(
+            user_id=user_id,category__name='Exercise',created_at__range=[start_week, end_week],is_done=True).all())
+        percentage_of_success = 0
+        if no_of_times_in_current_week != 0:
+            percentage_of_success = (no_of_success_in_current_week/no_of_times_in_current_week)*100
+        if percentage_of_success <= 40:
+            range_of_success_of_commitment_name_in_this_week = '0-40%'
+        elif percentage_of_success > 40 and percentage_of_success <=70:
+            range_of_success_of_commitment_name_in_this_week = '40-70%'
+        elif percentage_of_success > 70:
+            range_of_success_of_commitment_name_in_this_week = '70-100%'
+        if no_of_times_in_current_week == 0 :
+            range_of_success_of_commitment_name_in_this_week = ''
+        next_date = datetime.now() + timedelta(days=1)
+        next_day = next_date.strftime('%A')
+        is_weekend = False
+        if(next_day == 'Saturday' or next_day == 'Sunday'):
+            is_weekend = True
+        get_voie_details = voiceAssistantBeforeUpdateMessageModel.objects.values().filter(
+            commitment_category_id=3,
+            occupation_id=occupation_id,
+            age_group=age_group,
+            no_of_times_in_current_week=no_of_times_in_current_week,
+            range_of_success_of_commitment_name_in_this_week=range_of_success_of_commitment_name_in_this_week,
+            is_it_weekend=is_weekend
+            ).get()
+        # print(f"get_voie_details {get_voie_details}")
+        # for i in range(0,len(get_voie_details)):
+        #     print(get_voie_details[i]['id'])
+        voice_message = ''
+        if get_voie_details is not None:
+            translator = Translator()
+            user_selected_language = userPreferredVoiceLanguageModel.objects.filter(
+                user_id=user_id).first().voice_assistant_language.languageCode
+            voice_message = get_voie_details['voice_assistant_message']
+            voice_message = str(voice_message).replace('warrior',str(user_data['full_name']).split(' ')[0])
+            local_audio_path = f"{user_id}_{next_day_date}"
+            translated_text = translator.translate(voice_message,dest=user_selected_language)
+            tts = gtts.gTTS(translated_text.text,
+            lang = user_selected_language,slow=False,tld='com')
+            tts.save(f"static/{local_audio_path}.mp3")
+        return Response(
+            ResponseData.success(
+                [], "Voice assistant message saved successfully"),
+            status=status.HTTP_201_CREATED,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@celery_app.task()
+def addAllAfterUpdateVoicesLocally(userId):
+        """Function to add voice assistant voice locally after update """
+        user_id = userId
+        user_data = UserModel.objects.values().filter(id=user_id).get()
+        if user_data is not None:
+         print("scsdc")
+         voice_data = voiceAssistantAfterUpdateMessageModel.objects.values().filter().all()
+         path = os.path.join('static/', f"{str(user_data['full_name']).split(' ')[0]}_{user_id}")
+         if not os.path.exists(path):
+          os.mkdir(path)
+          for i in range(0,len(voice_data)):
+            translator = Translator()
+            user_selected_language = userPreferredVoiceLanguageModel.objects.filter(
+                user_id=user_id).first().voice_assistant_language.languageCode
+            voice_message = voice_data[i]['voice_assistant_message']
+            voice_message = str(voice_message).replace('warrior',str(user_data['full_name']).split(' ')[0])
+            local_audio_path = f"{voice_data[i]['id']}"
+            translated_text = translator.translate(voice_message,dest=user_selected_language)
+            tts = gtts.gTTS(translated_text,
+            lang = user_selected_language,slow=False,tld='com')
+            print("called")
+            tts.save(f"static/{str(user_data['full_name']).split(' ')[0]}_{user_id}/{local_audio_path}.mp3")

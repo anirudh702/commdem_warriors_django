@@ -47,10 +47,10 @@ class CauseOfCategorySuccessOrFailureModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
-    def __str__(self):
-         return self.title
+    # def __str__(self):
+    #      return self.title
 
-class CommitmentModel(models.Model):
+class   CommitmentModel(models.Model):
     """Model for commitment data"""
     id = models.AutoField(primary_key=True)
     # user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True,default=None)
@@ -76,8 +76,8 @@ class ReasonBehindCommitmentSuccessOrFailureForUser(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
-    def __str__(self):
-         return self.cause_of_category_success_or_failure__title
+    # def __str__(self):
+    #      return self.cause_of_category_success_or_failure__id
 
 
 class CommitmentGraphDataModel(models.Model):
@@ -86,6 +86,19 @@ class CommitmentGraphDataModel(models.Model):
     # user = models.ForeignKey('user.UserModel', on_delete=models.CASCADE,null=True,default=None)
     user_id=models.IntegerField(blank=True,default=0)
     percentage_done = models.FloatField()
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()
+
+class ExerciseModel(models.Model):
+    """Model for storing starting time of exercise of a user in a day"""
+    id = models.AutoField(primary_key=True)
+    user_id=models.IntegerField(blank=True,default=0)
+    commitment_name = models.ForeignKey(CommitmentNameModel, on_delete=models.CASCADE,null=False)
+    time_to_start = models.CharField(max_length=50,null=False,db_index=True,default='')
+    commitment_date = models.DateTimeField(default=next_day_datetime, blank=True)
+    did_speak_before = models.BooleanField(default=False)
+    did_speak_positive_affirmation = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()

@@ -28,6 +28,8 @@ from django.db.models.expressions import Window
 from django.db.models.functions import Rank
 from voiceAssistant.models import userPreferredVoiceLanguageModel, voiceAssistantLanguagesModel 
 import razorpay
+
+from voiceAssistant.views import addAllAfterUpdateVoicesLocally
 load_dotenv()
 
 def random_with_N_digits(n):
@@ -64,7 +66,7 @@ def signup(request):
             city_id = serializer.data['city_id']
             state_id = serializer.data['state_id']
             country_id = serializer.data['country_id']
-            income_range = serializer.data['income_range']
+            # income_range = serializer.data['income_range']
             is_medicine_ongoing = serializer.data['is_medicine_ongoing']
             any_health_issues = serializer.data['any_health_issues']
             player_id = serializer.data['player_id'] if 'player_id' in request.data else ""
@@ -115,7 +117,7 @@ def signup(request):
                 designation_title=designation_title,
                 user=UserModel(id=new_user.id),
                 designation_id=designation,
-                income_range_id=income_range,
+                # income_range_id=income_range,
             )
             new_user_professional_details.save()
             new_user_health_details = UserHealthDetailsModel.objects.create(
@@ -251,6 +253,7 @@ def signin(request):
                 ResponseData.success(
                      user_details,"User logged in successfully"),
             )
+            
     except Exception as exception:
         return Response(
             ResponseData.error(str(exception)),
@@ -283,10 +286,10 @@ def is_user_subscribed(request):
                 status=status.HTTP_201_CREATED)
             subscription_data = SubscriptionModel.objects.filter(id=user_subscription_details.subscription_id).first()
             diff = (datetime.now().date() - user_subscription_details.created_at.date())
-            print(subscription_data.is_free_trial)
             if(subscription_data.is_free_trial):
                 if(diff.days > int(subscription_data.duration)):
-                    print(diff.days())
+                    print("sxs")
+                    # print(diff.days())
                     user_subscription_details.is_active = False
                     user.is_subscribed = False
                     user_subscription_details.save()
@@ -377,7 +380,7 @@ def addNewPayment(request):
             user_data.save()
             return Response(
                 ResponseData.success_without_data(
-                    "Payment done successfully"),
+                    "Subscription done successfully"),
                 status=status.HTTP_201_CREATED,
             )
         for error in serializer.errors:
@@ -861,22 +864,20 @@ def getOverallPerformerOfTheWeekCategoryWise(request):
 def updateProfile(request):
     """Function to update user profile"""
     try:
-        data = request.data
-        serializer = UserSignUpSerializer(data=data)
-        if serializer.is_valid():
-            user_id = serializer.data["id"]
-            first_name = serializer.data["first_name"]
-            last_name = serializer.data["last_name"]
-            mobile_number = serializer.data["mobile_number"]
-            password = serializer.data["password"]
-            age = serializer.data["age"]
-            city = serializer.data['city']
-            income_range = serializer.data['income_range']
-            designation_title = serializer.data["designation_title"]
-            designation = serializer.data["designation"]
-            is_medicine_ongoing = serializer.data["is_medicine_ongoing"]
-            any_health_issues = serializer.data["any_health_issues"]
-            is_subscribed = serializer.data["is_subscribed"]
+            data = request.data
+            print(data)
+            user_id = request.data["id"]
+            fullName = request.data["fullName"]
+            mobile_number = request.data["mobileNumber"]
+            email = request.data["email"]
+            profilePic = request.data["profilePic"]
+            weight = request.data['weight']
+            height = request.data['height']
+            cityName = request.data['cityName']
+            stateName = request.data['stateName']
+            countryName = request.data['countryName']
+            occupationData = request.data["designationData"]
+            designationTitle = request.data["designationTitle"]
             userdata = UserModel.objects.filter(
                 id=user_id
             ).first()
@@ -888,23 +889,34 @@ def updateProfile(request):
             if 'profile_pic' in request.FILES:
                 fs = FileSystemStorage(location='static/')
                 fs.save(request.FILES['profile_pic'].name, request.FILES['profile_pic'])
-            userdata.first_name=first_name
-            userdata.last_name=last_name
-            userdata.mobile_number = mobile_number
-            userdata.password = password
-            userdata.age = age
-            userdata.designation_title = designation_title
-            # userdata.designation = DesignationModel(id=designation)
-            # userdata.city = CitiesModel(id=city)
-            userdata.is_medicine_ongoing = is_medicine_ongoing
-            userdata.any_health_issues = any_health_issues
-            userdata.is_subscribed = is_subscribed
-            # if 'income_range' in data and 'profile_pic' in request.FILES:
-            #    userdata.profile_pic = f"static/{request.FILES['profile_pic']}"
-            #    userdata.income_range = IncomeModel(id=income_range)
-            # elif('income_range' in data and 'profile_pic' not in request.FILES):
-                # userdata.income_range = IncomeModel(id=income_range)
+            userdata.full_name=fullName
+            userdata.mobile_number=mobile_number
+            userdata.email = email
+            userdata.profile_pic = profilePic
             userdata.save()
+            userhealthdata = UserHealthDetailsModel.objects.filter(
+                user_id=user_id
+            ).first()
+            userhealthdata.weight = weight
+            userhealthdata.height = height
+            userhealthdata.save()
+            city_id = CitiesModel.objects.values().filter(name=cityName).get()['id']
+            state_id = StatesModel.objects.values().filter(state_name=stateName).get()['state_id']
+            country_id = CountriesModel.objects.values().filter(country_name=countryName).get()['country_id']
+            userlocationdata = UserLocationDetailsModel.objects.filter(
+                user_id=user_id
+            ).first()
+            userlocationdata.city_id = city_id
+            userlocationdata.state_id = state_id
+            userlocationdata.country_id = country_id
+            userlocationdata.save()
+            userdesignationdata = UserProfessionalDetailsModel.objects.filter(
+                user_id=user_id
+            ).first()
+            userdesignationdata.designation_title = designationTitle
+            designation_id = DesignationModel.objects.values().filter(title=occupationData).get()['id']
+            userdesignationdata.designation_id = designation_id
+            userdesignationdata.save()
             updated_date = list(
                 UserModel.objects.values().filter(
                     id=user_id)
@@ -914,23 +926,11 @@ def updateProfile(request):
                     updated_date[0]['id'], "User profile updated successfully"),
                 status=status.HTTP_201_CREATED,
             )
-        return Response(
-            ResponseData.error(serializer.errors),
-            status=status.HTTP_400_BAD_REQUEST,
-        )
     except KeyError as exception:
         return Response(
             ResponseData.error(str(exception)),
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
-def giveCashbackToUser():
-    client = razorpay.Client(auth=("rzp_test_4o94Sjvz44DNhx", "CXi3eeltjaUavtFLid55dnZw"))
-    client.payment.refund('pay_Kufz1VEQSIbKdA',{
-  "amount": "1",
-  "speed": "optimum",
-  "receipt": "Receipt No. 31"
-})
 
 
 @api_view(["POST"])
@@ -954,7 +954,10 @@ def getUserProfileDetails(request):
             for i in range(0,len(user_details)):
                user_details[i]['total_commitments'] = CommitmentModel.objects.filter(user_id=user_details[i]['id']).count()
                user_details[i]['done_commitments'] = CommitmentModel.objects.filter(user_id=user_details[i]['id'],is_done=True,is_updated=True).count()
-               user_details[i]['star_rating'] = (user_details[i]['done_commitments']/user_details[i]['total_commitments'])*5
+               if (user_details[i]['total_commitments']) != 0:
+                  user_details[i]['star_rating'] = (user_details[i]['done_commitments']/user_details[i]['total_commitments'])*5
+               else:
+                  user_details[i]['star_rating'] = 0.0
                users_data = UserModel.objects.values().filter(is_active=True).all()
                for j in range(0,len(users_data)):
                 users_data[j]['total_commitments_done'] = CommitmentModel.objects.filter(user_id=users_data[j]['id'],is_done=True,is_updated=True).count()
@@ -969,28 +972,33 @@ def getUserProfileDetails(request):
                user_details[i].pop('created_at')
                user_details[i].pop('updated_at')
                user_details[i].pop('is_active')
+               user_health_details = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
+               if user_health_details is not None:
+                 user_details[i]['age'] = user_health_details['age']
+                 user_details[i]['weight'] = user_health_details['weight']
+                 user_details[i]['height'] = user_health_details['height']
+                 user_details[i]['gender'] = user_health_details['gender']
                city_id = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
                if city_id is not None:
-                user_details[i]['city_data'] = CitiesModel.objects.values().filter(id=city_id['city_id']).get()
-                user_details[i]['city_data'].pop('created_at')
-                user_details[i]['city_data'].pop('updated_at')
+                user_details[i]['city_name'] = CitiesModel.objects.values().filter(id=city_id['city_id']).get()['name']
+               state_id = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
+               if state_id is not None:
+                user_details[i]['state_name'] = StatesModel.objects.values().filter(state_id=state_id['state_id']).get()['state_name']
+               country_id = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
+               if country_id is not None:
+                user_details[i]['country_name'] = CountriesModel.objects.values().filter(country_id=country_id['country_id']).get()['country_name']
                income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
                if income_range_id['income_range_id'] is not None:
-                user_details[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
-                user_details[i]['income_range_data'].pop('created_at')
-                user_details[i]['income_range_data'].pop('updated_at')
-                user_details[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()
+                user_details[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()['income_range']
+                user_details[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()['title']
                 user_details[i]['designation_title'] = income_range_id['designation_title']
-                user_details[i]['designation_data'].pop('created_at')
-                user_details[i]['designation_data'].pop('updated_at')
                check_data = RedeemPointsModel.objects.values().filter().all()
                for j in range(0,check_data.count()):
                   if(check_data[j]['to_user_id'] == user_id and check_data[j]['is_active']):
                    user_details[i]['redeem_point_data'] = check_data[j]
                    user_details[i]['redeem_point_data'].pop('updated_at')
                    user_details[i]['redeem_point_data'].pop('created_at')
-                   user_details[i]['redeem_point_data'].pop('from_user_ids')
-               user_details[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()['age']
+                   user_details[i]['redeem_point_data'].pop('from_user_id')
             return Response(
                 ResponseData.success(
                     user_details, " User details fetched successfully"),
@@ -1067,3 +1075,17 @@ def delete_user_details(request):
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+from twilio.rest import Client
+
+# account_sid = 'ACe0c13b45f4486432ca3eea5759905960'
+# auth_token = 'be2aab1bab8b7e6c650aeafe6bdd711a'
+# client = Client(account_sid, auth_token)
+
+# call = client.calls.create(
+#                         twiml='<Response><Say>Hey anirudh, today is best day for you in your life. Please get up.</Say></Response>',
+#                         to='+917020829599',
+#                         from_='+19704323190'
+#                     )
+
+# print(call.sid)

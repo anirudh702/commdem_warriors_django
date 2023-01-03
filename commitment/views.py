@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta
+import os
 from django.forms import model_to_dict
 from django.shortcuts import render
+from googletrans import Translator
+import gtts
 from rest_framework.decorators import api_view
 from location.models import CitiesModel
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ReasonBehindCommitmentSuccessOrFailureForUser
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser
 from rest_framework.response import Response
 from commitment.serializers import AddCauseOfCategorySerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, GetOtherUsersCommitmentsSerializer, UpdateCommitmentsSerializer
 from designation.models import DesignationModel
@@ -13,6 +16,8 @@ from rest_framework import status
 from user.models import UserLocationDetailsModel, UserModel, UserProfessionalDetailsModel, keysToUpdateInFrontEndModel
 from django.db.models import Q
 
+from voiceAssistant.models import userPreferredVoiceLanguageModel, voiceAssistantAfterUpdateMessageModel
+
 # Create your views here.
 # UserRouter().create_user_materialized_view()
 
@@ -20,7 +25,9 @@ from django.db.models import Q
 def add_new_commitment(request):
     """Function to add new commitment"""
     try:
+        print(f'request.data {request.data}')
         user_id = request.data["user_id"]
+        time_to_start = request.data['time_to_start']
         commitment_category_id_with_name_id = request.data['category_id_with_name_id']
         user = UserModel.objects.filter(id=user_id,is_active=True).first()
         if not user:
@@ -49,17 +56,30 @@ def add_new_commitment(request):
             print(f"commitment_category_data {commitment_category_data}")
             already_exists = False
             for i in range(0,commitment_category_data.count()):
-                if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=1)).split(' ')[0]):
+                if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=0)).split(' ')[0]):
                     already_exists = True
                     break
             if already_exists:
+                final_data = []
                 return Response(
                     ResponseData.error("Commitment already exists with same category for day specified"),
                     status=status.HTTP_201_CREATED,
                 )
+            elif(category_id == '3'):
+                data_exists = ExerciseModel.objects.filter(Q(commitment_date__icontains=str(datetime.now() + timedelta(days=0)).split('T')[0])).filter(user_id=user_id,
+                commitment_name_id=commitment_name_id).first()
+                print(f"commitment_name_id {commitment_name_id}")
+                if not data_exists:
+                 new_exercise_details = ExerciseModel.objects.create(
+                user_id=user_id,
+                commitment_name_id=commitment_name_id,
+                time_to_start=time_to_start,
+                commitment_date=datetime.now() + timedelta(days=0),
+            )
+                 new_exercise_details.save()
             final_data.append(CommitmentModel(
                 user_id=user_id,
-                commitment_date=datetime.now() + timedelta(days=1),
+                commitment_date=datetime.now() + timedelta(days=0),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
@@ -324,11 +344,17 @@ def get_commitment_name(request):
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-def functionForReasonsBehindCommitments(commitment_data,i):
+def functionForReasonsBehindCommitments(commitment_data,i,user_selected_language='',first_name='',user_id=''):
         commitment_data[i].pop('commitment_name_id')
         commitment_data[i]['commitment_name_data'].pop('created_at')
         commitment_data[i]['commitment_name_data'].pop('updated_at')
+        print(f"user_selected_language {user_selected_language}")
         for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
+                if(user_selected_language != ''):
+                   voice_data = voiceAssistantAfterUpdateMessageModel.objects.values().filter(
+                       reason_behind_commitment_success_or_failure_id=commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
+                   local_audio_path = f"static/{first_name}_{user_id}/{voice_data['id']}.mp3"
+                   commitment_data[i]['voice_message'] = local_audio_path  
                 commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_data'] = CauseOfCategorySuccessOrFailureModel.objects.values().filter(id=
                 commitment_data[i]['reasons_behind_success_or_failure'][j]['cause_of_category_success_or_failure_id']).get()
                 commitment_data[i]['reasons_behind_success_or_failure'][j].pop('created_at')
@@ -339,19 +365,36 @@ def functionForReasonsBehindCommitments(commitment_data,i):
                 commitment_data[i]['reasons_behind_success_or_failure'][j].pop('cause_of_category_success_or_failure_id')
 
 
-def changesInAllCommitment(commitment_data,user_id):
+def changesInAllCommitment(commitment_data,user_id,user_selected_language='',first_name='',commitment_date=''):
     for i in range(0,len(commitment_data)):
         commitment_data[i].pop('created_at')
         commitment_data[i].pop('updated_at')
         commitment_data[i].pop('user_id')
         commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
+        if(commitment_data[i]['is_updated'] == False):
+           path = f"static/{user_id}_{str(commitment_data[i]['commitment_date']).split(' ')[0]}.mp3"
+           if(commitment_data[i]['category_data']['name'] == 'Exercise') and os.path.exists(path):
+               commitment_data[i]['voice_message'] = path           
         commitment_data[i].pop('category_id')
         commitment_data[i]['category_data'].pop('created_at')
         commitment_data[i]['category_data'].pop('updated_at')
         commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
+        if(commitment_data[i]['category_data']['name'] == 'Exercise'):
+            exercise_timing = ExerciseModel.objects.values().filter(Q(commitment_date__icontains=commitment_date),Q(created_at__icontains=commitment_date),user_id=user_id).first()
+            print(f"exercise_timing {exercise_timing}")
+            if exercise_timing is not None:
+              commitment_data[i]['commitment_name_data']['positive_affirmation'] =  "I will be honest with myself and " + commitment_data[i]['commitment_name_data']['currentDayName'] + " at any cost"
+              commitment_data[i]['commitment_name_data']['time_to_start'] = exercise_timing['time_to_start']
+              commitment_data[i]['commitment_name_data']['did_speak_before'] = exercise_timing['did_speak_before']
+              commitment_data[i]['commitment_name_data']['did_speak_positive_affirmation'] = exercise_timing['did_speak_positive_affirmation']
+              commitment_data[i]['commitment_name_data']['currentDayName'] += f" at {exercise_timing['time_to_start']}"
+              commitment_data[i]['commitment_name_data']['successName'] += f" at {exercise_timing['time_to_start']}"
+              commitment_data[i]['commitment_name_data']['failureName'] += f" at {exercise_timing['time_to_start']}"
+              
+        print(commitment_data[i]['id'])
         commitment_data[i]['reasons_behind_success_or_failure'] = ReasonBehindCommitmentSuccessOrFailureForUser.objects.values().filter(
            user_id=user_id,commitment=CommitmentModel(id=commitment_data[i]['id'])).all()
-        functionForReasonsBehindCommitments(commitment_data,i)
+        functionForReasonsBehindCommitments(commitment_data,i,user_selected_language,first_name,user_id)
     return commitment_data
 
 def changesInOtherCommitments(commitment_data):
@@ -583,7 +626,7 @@ def get_user_commitments_by_commitment_date_only(request):
     try:
         data = request.data
         print(data)
-        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
+        user = UserModel.objects.filter(id=request.data['user_id']).first()
         if not user:
                    return Response(
                        ResponseData.error("User id is invalid"),
@@ -601,7 +644,6 @@ def get_user_commitments_by_commitment_date_only(request):
             start=(page_no-1)*page_size
             end=page_no*page_size
             commitment_data = []
-            print("Dcd")
             if page_number == 0 and search_param != "":
                 commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')
             elif page_number != 0 and search_param != "":
@@ -615,7 +657,11 @@ def get_user_commitments_by_commitment_date_only(request):
                        ResponseData.success(
                            [], "No commitment found"),
                        status=status.HTTP_201_CREATED)
-            final_data = changesInAllCommitment(commitment_data,user_id)
+            user_first_name = str(UserModel.objects.filter(
+                    id=user_id).first().full_name).split(' ')[0]
+            user_selected_language = userPreferredVoiceLanguageModel.objects.filter(
+                    user_id=user_id).first().voice_assistant_language.languageCode
+            final_data = changesInAllCommitment(commitment_data,user_id,user_selected_language,user_first_name,commitment_date)
             return Response(
                        ResponseData.success(
                            final_data, "Commitments fetched successfully"),
@@ -794,6 +840,7 @@ def update_commitment(request):
     """Function to update commitment based on user id and commitment id"""
     try:
         data = request.data
+        print(f"data {data}")
         user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                 return Response(
@@ -851,3 +898,36 @@ def update_commitment(request):
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@api_view(["POST"])
+def update_exercise_model(request):
+    """Function to update exercise model for a commitment and a user"""
+    try:
+        data = request.data
+        print(f"data {data}")
+        is_it_before = request.data['is_it_before']
+        commitment_date = request.data['commitment_date']
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
+        if not user:
+                return Response(
+                    ResponseData.error("User id is invalid"),
+                    status=status.HTTP_200_OK,
+                )
+        exercise_details = ExerciseModel.objects.filter(Q(commitment_date__icontains=commitment_date),user_id=request.data['user_id'],
+        commitment_name_id=request.data['commitment_name_id']).first()
+        if exercise_details is None:
+            return Response(
+                    ResponseData.error("Exercise model details are invalid"),
+                    status=status.HTTP_200_OK,
+                )
+        if(is_it_before):
+          exercise_details.did_speak_before = True
+        else:
+          exercise_details.did_speak_positive_affirmation = True
+        exercise_details.save()
+        return Response(
+                ResponseData.success_without_data("Exercise status updated successfully"),
+                status=status.HTTP_201_CREATED)
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
