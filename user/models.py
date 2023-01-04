@@ -4,6 +4,7 @@ import django
 
 from designation.models import DesignationModel
 from income.models import IncomeModel
+from subscription.models import SubscriptionModel
 
 # Create your models here.
 class UserModel(models.Model):
@@ -27,6 +28,7 @@ class UserModel(models.Model):
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     is_active = models.BooleanField(default=False)
     objects = models.Manager()
+    
 
     # class Meta:
     #     managed = False
@@ -37,7 +39,7 @@ class UserPaymentDetailsModel(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
     payment_id = models.CharField(max_length=50)
-    subscription_id=models.IntegerField(blank=True,default=0)
+    subscription = models.ForeignKey(SubscriptionModel, on_delete=models.CASCADE,null=True)
     date_of_payment = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
@@ -48,8 +50,8 @@ class UserSubscriptionDetailsModel(models.Model):
     """Model for user subscription details"""
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
-    # subscription = models.ForeignKey('subscription.SubscriptionModel', on_delete=models.CASCADE,null=True)
-    subscription_id=models.IntegerField(blank=True,default=0)
+    subscription = models.ForeignKey(SubscriptionModel, on_delete=models.CASCADE,null=True)
+    # subscription_id=models.IntegerField(blank=True,default=0)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     is_active = models.BooleanField(default=False)

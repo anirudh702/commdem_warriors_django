@@ -31,6 +31,7 @@ urlpatterns = [
     path('location_app/', include("location.urls")),
     path('food_app/', include("food.urls")),
     path('voice_assistant_app/', include("voiceAssistant.urls")),
+    path('positive_affirmations_app/', include("positive_affirmations.urls")),
     path("graphql", GraphQLView.as_view(graphiql=True)),
 ]
 

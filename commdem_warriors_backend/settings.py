@@ -62,7 +62,9 @@ INSTALLED_APPS = [
     'graphene_django',
     'food',
     'voiceAssistant',
-    'background_task'
+    'challenges',
+    'positive_affirmations'
+    # 'background_task'
 ]
 
 MIDDLEWARE = [
@@ -262,4 +264,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
-# TIME_ZONE =  'Asia/Kolkata'
+TIME_ZONE =  'Asia/Kolkata'

@@ -15,7 +15,7 @@ from voiceAssistant.models import userCommitmentVoiceBeforeUpdateModel, userPref
 from voiceAssistant.serializers import AddUserCommitmentVoiceFileSerializer, AddVoiceAssistantAfterUpdateMessageSerializer, AddVoiceAssistantBeforeUpdateMessageSerializer
 from googletrans import Translator
 from django.db.models import Q
-from background_task import background
+# from background_task import background
 from commdem_warriors_backend import celery_app
 
 # Create your views here.

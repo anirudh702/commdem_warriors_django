@@ -2,7 +2,7 @@
 
 from dataclasses import fields
 from rest_framework import serializers
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentModel, CommitmentNameModel
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentModel, CommitmentNameModel, UserNumberOfCommitmentForNextWeekModel
 
 
 class AddCommitmentSerializer(serializers.ModelSerializer):
@@ -27,6 +27,13 @@ class AddCommitmentNameSerializer(serializers.ModelSerializer):
         model = CommitmentNameModel
         exclude = ["created_at","updated_at"]
 
+class AddUserNumberOfCommitmentsFornextWeekSerializer(serializers.ModelSerializer):
+    """Serializer for adding number of commitments user wants to do next week"""
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserNumberOfCommitmentForNextWeekModel
+        exclude = ["created_at","updated_at"]
+
 class GetCommitmentCategorySerializer(serializers.ModelSerializer):
     """Serializer for getting commitment category"""
     id = serializers.IntegerField(default=None)
@@ -44,6 +51,14 @@ class GetCommitmentNameSerializer(serializers.ModelSerializer):
         """Meta class to change behaviour of model fields"""
         model = CommitmentNameModel
         fields = ["category"]
+
+class GetUserCommitmentsForCurrentWeekSerializer(serializers.ModelSerializer):
+    """Serializer for getting number of commitments and challenges user will finish this week"""
+    user_id = serializers.IntegerField(default=None)
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserNumberOfCommitmentForNextWeekModel
+        fields = ["user_id"]
 
 class GetCommitmentsSerializer(serializers.ModelSerializer):
     """Serializer for getting commitments"""

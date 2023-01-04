@@ -6,14 +6,16 @@ from googletrans import Translator
 import gtts
 from rest_framework.decorators import api_view
 from location.models import CitiesModel
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser, UserNumberOfCommitmentForNextWeekModel
 from rest_framework.response import Response
-from commitment.serializers import AddCauseOfCategorySerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, GetOtherUsersCommitmentsSerializer, UpdateCommitmentsSerializer
+from commitment.serializers import AddCauseOfCategorySerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, AddUserNumberOfCommitmentsFornextWeekSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, GetOtherUsersCommitmentsSerializer, GetUserCommitmentsForCurrentWeekSerializer, UpdateCommitmentsSerializer
 from designation.models import DesignationModel
 from income.models import IncomeModel
+from positive_affirmations.models import UserAffirmationModel
 from response import Response as ResponseData
 from rest_framework import status
-from user.models import UserLocationDetailsModel, UserModel, UserProfessionalDetailsModel, keysToUpdateInFrontEndModel
+from subscription.models import SubscriptionLevelModel, SubscriptionModel
+from user.models import UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel, keysToUpdateInFrontEndModel
 from django.db.models import Q
 
 from voiceAssistant.models import userPreferredVoiceLanguageModel, voiceAssistantAfterUpdateMessageModel
@@ -260,6 +262,41 @@ def add_new_commitment_name(request):
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@api_view(["POST"])
+def add_no_of_commitments_user_will_do_next_week(request):
+    """Function to add number of commitments user will do for next week"""
+    try:
+        data = request.data
+        serializer = AddUserNumberOfCommitmentsFornextWeekSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user"]
+            min_no_of_food_commitments = serializer.data["min_no_of_food_commitments"]
+            min_no_of_water_commitments = serializer.data["min_no_of_water_commitments"]
+            min_no_of_exercise_commitments = serializer.data["min_no_of_exercise_commitments"]
+            min_no_of_challenges = serializer.data['min_no_of_challenges']
+            new_data = UserNumberOfCommitmentForNextWeekModel.objects.create(
+                user_id=user_id,
+                min_no_of_food_commitments=min_no_of_food_commitments,
+                min_no_of_water_commitments=min_no_of_water_commitments,
+                min_no_of_exercise_commitments=min_no_of_exercise_commitments,
+                min_no_of_challenges=min_no_of_challenges
+            )
+            new_data.save()
+            return Response(
+                ResponseData.success(
+                    [], "User Commitment Promise for next week added successfully"),
+                status=status.HTTP_201_CREATED,
+            )
+        for error in serializer.errors:
+            print(serializer.errors[error][0])
+        return Response(
+            ResponseData.error(serializer.errors[error][0]),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(["POST"])
 def get_commitment_category_with_name(request):
@@ -335,6 +372,120 @@ def get_commitment_name(request):
                     ResponseData.success(
                         commitment_name_data, "Commitment name fetched successfully"),
                     status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
+def get_no_of_commitments_user_will_do_current_week(request):
+    """Function to get number of commitments and challenges user will finish this week"""
+    try:
+        data = request.data
+        serializer = GetUserCommitmentsForCurrentWeekSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user_id"]
+            todays_date = str(datetime.now()).split(" ")[0]
+            does_data_exists = UserNumberOfCommitmentForNextWeekModel.objects.values().filter(user_id=user_id,start_date__lte=todays_date,end_date__gte=todays_date).all()
+            if len(does_data_exists) == 0:
+                return Response(
+                ResponseData.success_without_data(
+                    "Number of commitment data does not exists of this user for this current week"),
+                status=status.HTTP_201_CREATED)
+            for i in range(0,len(does_data_exists)):
+                does_data_exists[i].pop('created_at')
+                does_data_exists[i].pop('updated_at')
+            return Response(
+                ResponseData.success(
+                    does_data_exists, "Number of commitment details fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def get_number_of_all_commitments_of_user_of_the_week(request):
+    """Function to return users total commitments and promised commitments for the week"""
+    try:
+        data = request.data
+        serializer = GetUserCommitmentsForCurrentWeekSerializer(data=data)
+        if serializer.is_valid():
+            list_data = {}
+            user_id = serializer.data["user_id"]
+            start_date_of_week = str(datetime.now() - timedelta(days=datetime.now().weekday())).split(" ")[0]
+            todays_date = str(datetime.now()).split(" ")[0]
+            print(f"user_id {user_id}")
+            print(f"start_date_of_week {start_date_of_week}")
+            print(f"todays_date {todays_date}")
+            user_current_week_commitments_promise = UserNumberOfCommitmentForNextWeekModel.objects.values().filter(user_id=user_id,start_date__gte=start_date_of_week,end_date__lte=todays_date).first()
+            if user_current_week_commitments_promise is None:
+                return Response(
+                ResponseData.success_without_data(
+                    "No commitments were promised by this user this week."),
+                status=status.HTTP_201_CREATED)
+            exercise_commitments_promised = user_current_week_commitments_promise['min_no_of_exercise_commitments']
+            food_commitments_promised = user_current_week_commitments_promise['min_no_of_food_commitments']
+            water_commitments_promised = user_current_week_commitments_promise['min_no_of_water_commitments']
+            challenges_commitments_promised = user_current_week_commitments_promise['min_no_of_challenges']
+            user_current_week_exercise_commitments_finished = len(CommitmentModel.objects.values().filter(is_done=True,user_id=user_id,category__name = 'Exercise',
+            commitment_date__date__gte=start_date_of_week,commitment_date__date__lte=todays_date).all())
+            user_current_week_food_commitments_finished = len(CommitmentModel.objects.values().filter(is_done=True,user_id=user_id,category__name = 'Food',
+            commitment_date__date__gte=start_date_of_week,commitment_date__date__lte=todays_date).all())
+            user_current_week_water_commitments_finished = len(CommitmentModel.objects.values().filter(is_done=True,user_id=user_id,category__name = 'Water',
+            commitment_date__date__gte=start_date_of_week,commitment_date__date__lte=todays_date).all())
+            user_current_week_competitions_commitments_finished = 0
+            list_data['user_id'] = user_id
+            list_data['start_date_of_week'] = start_date_of_week
+            list_data['todays_date'] = todays_date
+            list_data['exercise_commitments_promised'] = exercise_commitments_promised
+            list_data['user_current_week_exercise_commitments_finished'] = user_current_week_exercise_commitments_finished
+            list_data['food_commitments_promised'] = food_commitments_promised
+            list_data['user_current_week_food_commitments_finished'] = user_current_week_food_commitments_finished
+            list_data['water_commitments_promised'] = water_commitments_promised
+            list_data['user_current_week_water_commitments_finished'] = user_current_week_water_commitments_finished
+            list_data['challenges_commitments_promised'] = challenges_commitments_promised
+            list_data['user_current_week_competitions_commitments_finished'] = user_current_week_competitions_commitments_finished
+            payment_data = UserPaymentDetailsModel.objects.filter(
+                user_id=user_id,is_active=True).first()
+            print(payment_data.subscription_id)
+            is_premium_subscription_active = SubscriptionModel.objects.values().filter(
+                id=payment_data.subscription_id,level_name = SubscriptionLevelModel(level='advanced')
+                ).first()
+            print(f"is_premium_subscription_active {is_premium_subscription_active}")
+            if((user_current_week_exercise_commitments_finished < exercise_commitments_promised or
+               user_current_week_food_commitments_finished < food_commitments_promised or
+               user_current_week_water_commitments_finished < water_commitments_promised or
+               user_current_week_competitions_commitments_finished < challenges_commitments_promised)):
+                    if(is_premium_subscription_active is None):
+                        get_user_affirmation_data = UserAffirmationModel.objects.values().filter(Q(created_at__icontains=todays_date),user_id=user_id).first()
+                        if get_user_affirmation_data is None:
+                            new_data = UserAffirmationModel.objects.create(
+                                 user_id=user_id,
+                                 number_of_commitment_for_week_id=user_current_week_commitments_promise['id']
+                                 )
+                            new_data.save()
+                        return Response(
+                                ResponseData.success(
+                                list_data, "User did not finish all commitments in this week"),
+                                status=status.HTTP_201_CREATED)
+                    return Response(
+                             ResponseData.success(
+                                 list_data, "Premium User did not finish all commitments in this week"),
+                             status=status.HTTP_201_CREATED)
+            return Response(
+                ResponseData.success(
+                    list_data, "Current week user commitments found. All are finished"),
+                status=status.HTTP_201_CREATED)
         return Response(
                     ResponseData.error(serializer.errors),
                     status=status.HTTP_400_BAD_REQUEST,
