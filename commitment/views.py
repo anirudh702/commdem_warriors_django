@@ -457,11 +457,9 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             list_data['user_current_week_competitions_commitments_finished'] = user_current_week_competitions_commitments_finished
             payment_data = UserPaymentDetailsModel.objects.filter(
                 user_id=user_id,is_active=True).first()
-            print(payment_data.subscription_id)
             is_premium_subscription_active = SubscriptionModel.objects.values().filter(
-                id=payment_data.subscription_id,level_name = SubscriptionLevelModel(level='advanced')
+                id=payment_data.subscription_id,level_name_id=2
                 ).first()
-            print(f"is_premium_subscription_active {is_premium_subscription_active}")
             if((user_current_week_exercise_commitments_finished < exercise_commitments_promised or
                user_current_week_food_commitments_finished < food_commitments_promised or
                user_current_week_water_commitments_finished < water_commitments_promised or

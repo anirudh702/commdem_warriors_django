@@ -72,26 +72,26 @@ def get_all_referrals_of_user(request):
                mapData['date_of_joining'] = str(user['joining_date']).split(' ')[0]
                city = UserLocationDetailsModel.objects.values().filter(user_id=data[i]['from_user_id']).first()
                if city is not None:
-                  print(f"city id {city['city_id']}")
                   mapData['city_name'] = CitiesModel.objects.values().filter(id=city['city_id']).get()['name']
                income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=data[i]['from_user_id'])).first()
                if income_range_id is not None:
                   mapData['occupation'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()['title']
                   mapData['designation_title'] = income_range_id['designation_title']
                mapData['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=data[i]['from_user_id'])).get()['age']
-               print(data[i]['from_user_id'])
                payment_details = list(UserPaymentDetailsModel.objects.values().filter(user_id=data[i]['from_user_id']))
-               print(f"payment_details {payment_details}")
                for j in range(0,len(payment_details)):
                    subscription_details = list(SubscriptionModel.objects.values().filter(
                         id=payment_details[j]['subscription_id']
                     ))
-                   subscription_details[0].pop('updated_at')
-                   subscription_details[0].pop('created_at')
-                   subscription_details[0]['level_name_id'] = 0
+                   if(len(subscription_details) > 0):
+                    subscription_details[0].pop('updated_at')
+                    subscription_details[0].pop('created_at')
+                    subscription_details[0]['level_name_id'] = 0
+                    payment_details[j]['subscription_details'] = subscription_details[0]
+                   else:
+                    payment_details[j]['subscription_details'] = {}
                    payment_details[j].pop('updated_at')
                    payment_details[j].pop('created_at')
-                   payment_details[j]['subscription_details'] = subscription_details[0]
                mapData['subscriptions'] = payment_details
                user_data.append(mapData)
             return Response(
