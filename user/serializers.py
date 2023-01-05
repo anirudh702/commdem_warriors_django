@@ -55,6 +55,7 @@ class UserSignInSerializer(serializers.ModelSerializer):
 class AddNewPaymentSerializer(serializers.ModelSerializer):
     """Serializer for adding new payment details"""
     user_id=serializers.IntegerField(default=None)
+    subscription_id=serializers.IntegerField(default=None)
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = UserPaymentDetailsModel
