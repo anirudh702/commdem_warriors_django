@@ -4,9 +4,10 @@ from django.forms import model_to_dict
 from django.shortcuts import render
 from googletrans import Translator
 import gtts
+import calendar
 from rest_framework.decorators import api_view
 from location.models import CitiesModel
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser, UserNumberOfCommitmentForNextWeekModel
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser, UserNumberOfCommitmentForNextWeekModel, next_weekday
 from rest_framework.response import Response
 from commitment.serializers import AddCauseOfCategorySerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, AddUserNumberOfCommitmentsFornextWeekSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, GetOtherUsersCommitmentsSerializer, GetUserCommitmentsForCurrentWeekSerializer, UpdateCommitmentsSerializer
 from designation.models import DesignationModel
@@ -267,6 +268,7 @@ def add_no_of_commitments_user_will_do_next_week(request):
     """Function to add number of commitments user will do for next week"""
     try:
         data = request.data
+        print(f"data {data}")
         serializer = AddUserNumberOfCommitmentsFornextWeekSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user"]
@@ -283,8 +285,9 @@ def add_no_of_commitments_user_will_do_next_week(request):
             )
             new_data.save()
             return Response(
-                ResponseData.success(
-                    [], "User Commitment Promise for next week added successfully"),
+                ResponseData.success_without_data(
+                    "Data added successfully",
+                    ),
                 status=status.HTTP_201_CREATED,
             )
         for error in serializer.errors:
@@ -424,10 +427,18 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             user_id = serializer.data["user_id"]
             start_date_of_week = str(datetime.now() - timedelta(days=datetime.now().weekday())).split(" ")[0]
             todays_date = str(datetime.now()).split(" ")[0]
-            print(f"user_id {user_id}")
-            print(f"start_date_of_week {start_date_of_week}")
-            print(f"todays_date {todays_date}")
-            user_current_week_commitments_promise = UserNumberOfCommitmentForNextWeekModel.objects.values().filter(user_id=user_id,start_date__gte=start_date_of_week,end_date__lte=todays_date).first()
+            isSunday = False
+            list_data['did_user_add_commitment_for_next_week'] = False
+            if(calendar.day_name[datetime.now().weekday()]=='Sunday'):
+                isSunday = True
+                next_day = datetime.now() + timedelta(days=1)
+                next_sunday = next_weekday(datetime.now(), 6)
+                print(f"next_day {next_day}")
+                print(f"next_sunday {next_sunday}")
+                didUserAddCommitmentsForNextWeek = UserNumberOfCommitmentForNextWeekModel.objects.values().filter(user_id=user_id,start_date=next_day,end_date=next_sunday).first()
+                if didUserAddCommitmentsForNextWeek is not None:
+                    list_data['did_user_add_commitment_for_next_week'] = True
+            user_current_week_commitments_promise = UserNumberOfCommitmentForNextWeekModel.objects.values().filter(user_id=user_id,start_date__lte=todays_date,end_date__gte=todays_date).first()
             if user_current_week_commitments_promise is None:
                 return Response(
                 ResponseData.success_without_data(
@@ -461,13 +472,14 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             is_premium_subscription_active = SubscriptionModel.objects.values().filter(
                 id=payment_data.subscription_id,level_name = SubscriptionLevelModel(level='advanced')
                 ).first()
-            print(f"is_premium_subscription_active {is_premium_subscription_active}")
             if((user_current_week_exercise_commitments_finished < exercise_commitments_promised or
                user_current_week_food_commitments_finished < food_commitments_promised or
                user_current_week_water_commitments_finished < water_commitments_promised or
                user_current_week_competitions_commitments_finished < challenges_commitments_promised)):
                     if(is_premium_subscription_active is None):
-                        get_user_affirmation_data = UserAffirmationModel.objects.values().filter(Q(created_at__icontains=todays_date),user_id=user_id).first()
+                        get_user_affirmation_data = UserAffirmationModel.objects.values().filter(
+                            number_of_commitment_for_week_id=user_current_week_commitments_promise['id'],
+                        user_id=user_id).first()
                         if get_user_affirmation_data is None:
                             new_data = UserAffirmationModel.objects.create(
                                  user_id=user_id,
@@ -476,15 +488,15 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
                             new_data.save()
                         return Response(
                                 ResponseData.success(
-                                list_data, "User did not finish all commitments in this week"),
+                                [list_data], "User did not finish all commitments in this week"),
                                 status=status.HTTP_201_CREATED)
                     return Response(
                              ResponseData.success(
-                                 list_data, "Premium User did not finish all commitments in this week"),
+                                 [list_data], "Premium User did not finish all commitments in this week"),
                              status=status.HTTP_201_CREATED)
             return Response(
                 ResponseData.success(
-                    list_data, "Current week user commitments found. All are finished"),
+                    [list_data], "Current week user commitments found. All are finished"),
                 status=status.HTTP_201_CREATED)
         return Response(
                     ResponseData.error(serializer.errors),

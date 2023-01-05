@@ -375,7 +375,6 @@ def addNewPayment(request):
             # )
             # new_subscription.save()
             user_data = UserModel.objects.filter(id=user_id).first()
-            print("dcdssdcs")
             user_data.is_subscribed = True
             user_data.save()
             return Response(
@@ -688,12 +687,10 @@ def getOverallPerformerOfTheWeek(request):
             "user_id" : "",
             "max_commitments" : 0
         }
-            print("lled")
             users_data[i]['commitments'] = []
             max_done_commitments['user_id'] = users_data[i]['id']
             commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
             max_done_commitments['max_commitments'] = len(commitment_data)
-            print("dcd")
             if(len(commitment_data) != 0):
                final_data.append(max_done_commitments)
         newlist = sorted(final_data, key=lambda d: d['max_commitments'],reverse=True)
