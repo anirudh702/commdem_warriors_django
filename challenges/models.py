@@ -30,8 +30,8 @@ import django
 from commitment.models import CommitmentNameModel
 
 # Create your models here.
-class ExerciseLevelModel(models.Model):
-    """Model for level of exercise data"""
+class WorkoutLevelModel(models.Model):
+    """Model for level of workout data"""
     id = models.AutoField(primary_key=True)
     level_name = models.CharField(max_length=20,blank=False,unique=True,db_index=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
@@ -40,12 +40,15 @@ class ExerciseLevelModel(models.Model):
     def __str__(self):
          return self.level_name
 
-class ExerciseWiseChallengesModel(models.Model):
-    """Model for challenges for every exercise workout level wise"""
+class WorkoutWiseChallengesModel(models.Model):
+    """Model for challenges for every workout level wise"""
     id = models.AutoField(primary_key=True)
-    level_of_exercise = models.ForeignKey(ExerciseLevelModel, on_delete=models.CASCADE,null=False)
-    exercise = models.ForeignKey(CommitmentNameModel, on_delete=models.CASCADE,null=False)
+    level_of_workout = models.ForeignKey(WorkoutLevelModel, on_delete=models.CASCADE,null=False)
+    workout_name = models.ForeignKey(CommitmentNameModel, on_delete=models.CASCADE,null=False)
+    workout_video_url = models.CharField(max_length=80,blank=False,unique=True,db_index=True)
+    workout_image = models.FileField(blank=True)
     challenge_name = models.CharField(max_length=80,blank=False,unique=True,db_index=True)
+    challenge_video_url = models.CharField(max_length=80,blank=False,unique=True,db_index=True,default='')
     challenge_image = models.FileField(blank=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)

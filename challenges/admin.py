@@ -1,11 +1,11 @@
 from django.contrib import admin
-from challenges.models import ExerciseLevelModel, ExerciseWiseChallengesModel
+from challenges.models import WorkoutLevelModel, WorkoutWiseChallengesModel
 
 # Register your models here.
-@admin.register(ExerciseLevelModel)
+@admin.register(WorkoutLevelModel)
 class ExerciseLevelModelAdmin(admin.ModelAdmin):
     pass
 
-@admin.register(ExerciseWiseChallengesModel)
+@admin.register(WorkoutWiseChallengesModel)
 class ExerciseWiseChallengesModelAdmin(admin.ModelAdmin):
     pass
