@@ -456,6 +456,7 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             commitment_date__date__gte=start_date_of_week,commitment_date__date__lte=todays_date).all())
             user_current_week_competitions_commitments_finished = 0
             list_data['user_id'] = user_id
+            list_data['number_of_commitment_for_week_id'] = user_current_week_commitments_promise['id']
             list_data['start_date_of_week'] = start_date_of_week
             list_data['todays_date'] = todays_date
             list_data['exercise_commitments_promised'] = exercise_commitments_promised
@@ -485,6 +486,9 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
                                  number_of_commitment_for_week_id=user_current_week_commitments_promise['id']
                                  )
                             new_data.save()
+                        else:
+                            list_data['did_user_speak_affirmations'] = get_user_affirmation_data['did_user_speak']
+                            list_data['did_user_speak_affirmations'] = get_user_affirmation_data['did_user_speak']
                         return Response(
                                 ResponseData.success(
                                 [list_data], "User did not finish all commitments in this week"),
@@ -510,7 +514,6 @@ def functionForReasonsBehindCommitments(commitment_data,i,user_selected_language
         commitment_data[i].pop('commitment_name_id')
         commitment_data[i]['commitment_name_data'].pop('created_at')
         commitment_data[i]['commitment_name_data'].pop('updated_at')
-        print(f"user_selected_language {user_selected_language}")
         for j in range(0,len(commitment_data[i]['reasons_behind_success_or_failure'])):
                 if(user_selected_language != ''):
                    voice_data = voiceAssistantAfterUpdateMessageModel.objects.values().filter(
@@ -807,13 +810,13 @@ def get_user_commitments_by_commitment_date_only(request):
             end=page_no*page_size
             commitment_data = []
             if page_number == 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-category_id')
             elif page_number != 0 and search_param != "":
-                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date) & (Q(category__name__icontains=search_param))).order_by('-category_id')[start:end]
             elif page_number != 0 and search_param == "":
-                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')[start:end]
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-category_id')[start:end]
             else:
-                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-commitment_date')
+                commitment_data = CommitmentModel.objects.values().filter(user_id=user_id).filter(Q(commitment_date__icontains=commitment_date)).order_by('-category_id')
             if commitment_data.count() == 0:
                        return Response(
                        ResponseData.success(
@@ -1040,8 +1043,10 @@ def update_commitment(request):
                                status=status.HTTP_200_OK,
                            )
                    does_data_exists_or_not = ReasonBehindCommitmentSuccessOrFailureForUser.objects.filter(user_id=user_id,
+                   commitment = CommitmentModel(id=commitment_id),
                    cause_of_category_success_or_failure=CauseOfCategorySuccessOrFailureModel(id=new_ids)).first()
                    if not does_data_exists_or_not:
+                       print("new reason created")
                        reasons = ReasonBehindCommitmentSuccessOrFailureForUser.objects.create(
                            user_id =user_id,
                            commitment = CommitmentModel(id=commitment_id),
