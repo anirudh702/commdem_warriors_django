@@ -128,3 +128,15 @@ class UserCashbackModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+
+class UserPrivacyModel(models.Model):
+    """Model for storing privacy status of users"""
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
+    is_age_hidden = models.BooleanField(default=True)
+    is_city_hidden = models.BooleanField(default=True)
+    is_mobile_number_hidden = models.BooleanField(default=True)
+    is_designation_title_hidden = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()

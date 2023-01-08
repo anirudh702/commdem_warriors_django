@@ -62,8 +62,8 @@ INSTALLED_APPS = [
     'graphene_django',
     'food',
     'voiceAssistant',
-    'challenges',
-    'positive_affirmations'
+    'positive_affirmations',
+    'challenges'
     # 'background_task'
 ]
 

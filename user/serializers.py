@@ -2,7 +2,7 @@
 
 from dataclasses import fields
 from rest_framework import serializers
-from user.models import UserModel, UserPaymentDetailsModel, UserSubscriptionDetailsModel
+from user.models import UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserSubscriptionDetailsModel
 from django.contrib.auth import password_validation
 
 
@@ -60,6 +60,18 @@ class AddNewPaymentSerializer(serializers.ModelSerializer):
         """Meta class to change behaviour of model fields"""
         model = UserPaymentDetailsModel
         exclude = ["created_at","updated_at"]
+
+class UpdateUserPrivacySerializer(serializers.ModelSerializer):
+    """Serializer for updating user privacy settings"""
+    user=serializers.IntegerField(default=None)
+    is_age_hidden=serializers.BooleanField(default=None)
+    is_city_hidden=serializers.BooleanField(default=None)
+    is_mobile_number_hidden=serializers.BooleanField(default=None)
+    is_designation_title_hidden=serializers.BooleanField(default=None)
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserPrivacyModel
+        fields = ["user","is_age_hidden","is_city_hidden","is_mobile_number_hidden","is_designation_title_hidden"]
 
 class AddUserSubscriptionSerializer(serializers.ModelSerializer):
     """Serializer for adding new subscription details of a user"""

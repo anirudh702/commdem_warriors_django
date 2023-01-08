@@ -9,9 +9,9 @@ from notifications.views import send_notification_to_admin
 from redeemPoints.models import RedeemPointsModel
 from referralCode.models import ReferralCodeModel
 from subscription.models import SubscriptionModel
-from user.models import UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel
+from user.models import UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel
 from rest_framework.response import Response
-from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetUserProfileSerializer, GetUserSubscriptionSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
+from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetUserProfileSerializer, GetUserSubscriptionSerializer, UpdateUserPrivacySerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -104,6 +104,10 @@ def signup(request):
                 is_active=True if mobile_number == "+917020829599" else False,
             )
             new_user.save()
+            user_privacy_creation = UserPrivacyModel.objects.create(
+                user_id=new_user.id,
+            )
+            user_privacy_creation.save()
             city_name = CitiesModel.objects.filter(id=city_id).first()
             new_user_location = UserLocationDetailsModel.objects.create(
                 user_id=new_user.id,
@@ -563,7 +567,7 @@ def getAllUsersDetails(request):
         else:
             total_categories = CommitmentCategoryModel.objects.values().filter().all()
         for i in range(0,len(users_data)):
-            if(total_categories.count() > 1):     
+            if(len(total_categories) > 1):     
                  commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id']).all()
                  done_commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
                  notDone_commitments_data = CommitmentModel.objects.values().filter(user_id = users_data[i]['id'],is_done = False,is_updated = True).all()
@@ -610,13 +614,18 @@ def getAllUsersDetails(request):
             users_data[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
             users_data[i].pop('created_at')
             users_data[i].pop('updated_at')
+            users_data[i]['privacy_details'] = {}
+            userPrivacyDetails = UserPrivacyModel.objects.values().filter(user_id=users_data[i]['id']).get()
+            users_data[i]['privacy_details']['is_age_hidden'] = userPrivacyDetails['is_age_hidden']
+            users_data[i]['privacy_details']['is_city_hidden'] = userPrivacyDetails['is_city_hidden']
+            users_data[i]['privacy_details']['is_mobile_number_hidden'] = userPrivacyDetails['is_mobile_number_hidden']
+            users_data[i]['privacy_details']['is_designation_title_hidden'] = userPrivacyDetails['is_designation_title_hidden']
         if(request_data['sortBy'] == 'Commitment done (max to min)'):
             users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'],reverse=True)[start:end]
         elif(request_data['sortBy'] == 'Commitment done (min to max)'):
             users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'],reverse=False)[start:end]
         elif(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == "" and search_param != ""):
             users_data = users_data[start:end]
-        print(f"final_data length {users_data.count()}")
         if(len(users_data) == 0):
           return Response(
             ResponseData.success(
@@ -929,6 +938,43 @@ def updateProfile(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+@api_view(["POST"])
+def updateUserPrivacyDetails(request):
+    """Function to update user privacy details""" 
+    try:
+        data = request.data
+        print(data)
+        serializer = UpdateUserPrivacySerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data['user']
+            if serializer.data['is_age_hidden'] is not None:
+                privacy_details = UserPrivacyModel.objects.filter(user_id=user_id).get()
+                privacy_details.is_age_hidden = serializer.data['is_age_hidden']
+                privacy_details.save()
+            elif serializer.data['is_city_hidden'] is not None:
+                privacy_details = UserPrivacyModel.objects.filter(user_id=user_id).get()
+                privacy_details.is_city_hidden = serializer.data['is_city_hidden']
+                privacy_details.save()
+            elif serializer.data['is_mobile_number_hidden'] is not None:
+                privacy_details = UserPrivacyModel.objects.filter(user_id=user_id).get()
+                privacy_details.is_mobile_number_hidden = serializer.data['is_mobile_number_hidden']
+                privacy_details.save()
+            elif serializer.data['is_designation_title_hidden'] is not None:
+                privacy_details = UserPrivacyModel.objects.filter(user_id=user_id).get()
+                privacy_details.is_designation_title_hidden = serializer.data['is_designation_title_hidden']
+                privacy_details.save()
+            return Response(
+                ResponseData.success_without_data(
+                    "Details updated successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(["POST"])
 def getUserProfileDetails(request):
@@ -999,6 +1045,40 @@ def getUserProfileDetails(request):
             return Response(
                 ResponseData.success(
                     user_details, " User details fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def getUserPrivacyDetails(request):
+    """Function to get user privacy details"""
+    try:
+        data = request.data
+        print(data)
+        serializer = GetUserProfileSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["id"]
+            user = UserModel.objects.filter(
+                id=user_id,is_active=True).first()
+            if not user:
+                return Response(
+                    ResponseData.error(
+                        "User id is invalid"),
+                    status=status.HTTP_201_CREATED,
+                )
+            user_privacy_details = UserPrivacyModel.objects.values().filter(user_id=user_id).all()
+            for i in range(0,len(user_privacy_details)):
+                user_privacy_details[0].pop('created_at')
+                user_privacy_details[0].pop('updated_at')
+            return Response(
+                ResponseData.success(
+                    user_privacy_details, " Privacy details fetched successfully"),
                 status=status.HTTP_201_CREATED)
         return Response(
                     ResponseData.error(serializer.errors),
