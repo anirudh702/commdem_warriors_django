@@ -47,7 +47,7 @@ def get_workout_challenge_of_today_of_user(request):
                        status=status.HTTP_201_CREATED)
             workout_data = WorkoutWiseChallengesModel.objects.values().filter(
                 workout_name_id=commitment_data['commitment_name_id']
-                ).all()
+                ).order_by('level_of_workout_id').all()
             print(f"workout_data {workout_data}")
             for i in range(0,len(workout_data)):
                 workout_data[i].pop('created_at')
