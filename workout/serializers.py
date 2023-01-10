@@ -3,13 +3,13 @@
 from dataclasses import fields
 from rest_framework import serializers
 
-from challenges.models import WorkoutWiseChallengesModel
+from workout.models import WorkoutModel
 
 
-class GetChallengesdataSerializer(serializers.ModelSerializer):
+class GetWorkoutdataSerializer(serializers.ModelSerializer):
     """Serializer for getting challenges"""
     user_id = serializers.IntegerField(default=None)
     class Meta:
         """Meta class to change behaviour of model fields"""
-        model = WorkoutWiseChallengesModel
+        model = WorkoutModel
         fields = ["user_id"]

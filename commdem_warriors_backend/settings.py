@@ -63,7 +63,7 @@ INSTALLED_APPS = [
     'food',
     'voiceAssistant',
     'positive_affirmations',
-    'challenges'
+    'workout'
     # 'background_task'
 ]
 
