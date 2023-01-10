@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 import gtts
 
 # translated_text = translator.translate('Hi tanu, please listen to me I know yesterday was tough day for you, but I just want you to ask yourself that do I really dont have 20 min to do exercise ?',dest='bn')
-tts = gtts.gTTS('hello sir, can I show you flow of features in our application ?',lang = 'en',slow=False,tld='co.in')
-tts.save("static/hello1.mp3")
+# tts = gtts.gTTS('hello sir, can I show you flow of features in our application ?',lang = 'en',slow=False,tld='co.in')
+# tts.save("static/hello1.mp3")
 
 load_dotenv()
 
@@ -63,7 +63,8 @@ INSTALLED_APPS = [
     'food',
     'voiceAssistant',
     'positive_affirmations',
-    'workout'
+    'workout',
+    'group_challenges'
     # 'background_task'
 ]
 
