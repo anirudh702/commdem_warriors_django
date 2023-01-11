@@ -17,6 +17,7 @@ def get_all_group_challenges(request):
     """Function to get group challenges based on date"""
     try:
         data = request.data
+        print(f"data {data}")
         user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
         if not user:
                    return Response(
@@ -27,8 +28,12 @@ def get_all_group_challenges(request):
         if serializer.is_valid():
             date = serializer.data['date']
             user_id = serializer.data['user_id']
+            is_finished = serializer.data['is_finished'] 
+            is_ongoing = serializer.data['is_ongoing'] 
+            is_upcoming = serializer.data['is_upcoming'] 
             page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
             page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
+
             page_no = page_number
             page_size = page_size_param
             start=(page_no-1)*page_size
@@ -36,6 +41,12 @@ def get_all_group_challenges(request):
             today_date = datetime.now().date()
             if date is not None:
                 challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=date,end_date__gte=date).order_by('-created_at').all()[start:end]
+            elif is_finished is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date).order_by('-created_at').all()[start:end]
+            elif is_ongoing is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date).order_by('-created_at').all()[start:end]
+            elif is_upcoming is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date).order_by('-created_at').all()[start:end]
             else:
                 challenges_data = GroupChallengesModel.objects.values().order_by('-created_at').all()[start:end]
             if len(challenges_data) == 0:

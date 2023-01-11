@@ -116,10 +116,7 @@ class UserNumberOfCommitmentForNextWeekModel(models.Model):
     min_no_of_food_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(3), MaxValueValidator(7)])
     min_no_of_water_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(4), MaxValueValidator(7)])
     min_no_of_exercise_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(3), MaxValueValidator(7)])
-    min_no_of_challenges = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(3), MaxValueValidator(7)])
-    start_date = models.DateField(blank=True,default=next_day_datetime,error_messages ={
-                    "unique":"Data for tomorrow already exists for this user"
-                    })
+    start_date = models.DateField(blank=True,default=next_day_datetime)
     end_date = models.DateField(blank=True,default=next_weekday(datetime.now(), 6))
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)

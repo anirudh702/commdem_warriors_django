@@ -275,13 +275,12 @@ def add_no_of_commitments_user_will_do_next_week(request):
             min_no_of_food_commitments = serializer.data["min_no_of_food_commitments"]
             min_no_of_water_commitments = serializer.data["min_no_of_water_commitments"]
             min_no_of_exercise_commitments = serializer.data["min_no_of_exercise_commitments"]
-            min_no_of_challenges = serializer.data['min_no_of_challenges']
             new_data = UserNumberOfCommitmentForNextWeekModel.objects.create(
                 user_id=user_id,
                 min_no_of_food_commitments=min_no_of_food_commitments,
                 min_no_of_water_commitments=min_no_of_water_commitments,
                 min_no_of_exercise_commitments=min_no_of_exercise_commitments,
-                min_no_of_challenges=min_no_of_challenges
+                # min_no_of_challenges=min_no_of_challenges
             )
             new_data.save()
             return Response(
@@ -447,7 +446,7 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             exercise_commitments_promised = user_current_week_commitments_promise['min_no_of_exercise_commitments']
             food_commitments_promised = user_current_week_commitments_promise['min_no_of_food_commitments']
             water_commitments_promised = user_current_week_commitments_promise['min_no_of_water_commitments']
-            challenges_commitments_promised = user_current_week_commitments_promise['min_no_of_challenges']
+            # challenges_commitments_promised = user_current_week_commitments_promise['min_no_of_challenges']
             user_current_week_exercise_commitments_finished = len(CommitmentModel.objects.values().filter(is_done=True,user_id=user_id,category__name = 'Exercise',
             commitment_date__date__gte=start_date_of_week,commitment_date__date__lte=todays_date).all())
             user_current_week_food_commitments_finished = len(CommitmentModel.objects.values().filter(is_done=True,user_id=user_id,category__name = 'Food',
@@ -465,8 +464,8 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             list_data['user_current_week_food_commitments_finished'] = user_current_week_food_commitments_finished
             list_data['water_commitments_promised'] = water_commitments_promised
             list_data['user_current_week_water_commitments_finished'] = user_current_week_water_commitments_finished
-            list_data['challenges_commitments_promised'] = challenges_commitments_promised
-            list_data['user_current_week_competitions_commitments_finished'] = user_current_week_competitions_commitments_finished
+            # list_data['challenges_commitments_promised'] = challenges_commitments_promised
+            # list_data['user_current_week_competitions_commitments_finished'] = user_current_week_competitions_commitments_finished
             payment_data = UserPaymentDetailsModel.objects.filter(
                 user_id=user_id,is_active=True).first()
             is_premium_subscription_active = SubscriptionModel.objects.values().filter(
@@ -474,8 +473,7 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
                 ).first()
             if((user_current_week_exercise_commitments_finished < exercise_commitments_promised or
                user_current_week_food_commitments_finished < food_commitments_promised or
-               user_current_week_water_commitments_finished < water_commitments_promised or
-               user_current_week_competitions_commitments_finished < challenges_commitments_promised)):
+               user_current_week_water_commitments_finished < water_commitments_promised)):
                     if(is_premium_subscription_active is None):
                         get_user_affirmation_data = UserAffirmationModel.objects.values().filter(
                             number_of_commitment_for_week_id=user_current_week_commitments_promise['id'],

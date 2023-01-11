@@ -11,11 +11,14 @@ class GetGroupChallengesSerializer(serializers.ModelSerializer):
     page_no = serializers.IntegerField(default=None)
     page_size = serializers.IntegerField(default=None)
     user_id = serializers.IntegerField(default=None)
+    is_finished = serializers.BooleanField(default=None)
+    is_ongoing = serializers.BooleanField(default=None)
+    is_upcoming = serializers.BooleanField(default=None)
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = GroupChallengesModel
-        fields = ["user_id",'page_no','page_size','date']
+        fields = ["user_id",'page_no','page_size','date','is_finished','is_ongoing','is_upcoming']
 
 class GetAllParticipantsOfGroupChallengeSerializer(serializers.ModelSerializer):
     """Serializer for getting all participants in group challenge"""
