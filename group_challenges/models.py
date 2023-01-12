@@ -31,3 +31,20 @@ class ParticipantsInGroupChallengeModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+
+class RulesOfGroupChallengeModel(models.Model):
+    """Model for rules of group challenge"""
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=100,db_index=True,default='')
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()
+
+class GuidelinesOfGroupChallengeModel(models.Model):
+    """Model for guidelines of group challenge"""
+    id = models.AutoField(primary_key=True)
+    group_challenge = models.ForeignKey(GroupChallengesModel, on_delete=models.CASCADE,null=True,default=None)
+    title = models.CharField(max_length=100,db_index=True,default='')
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()

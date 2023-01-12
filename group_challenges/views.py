@@ -2,7 +2,7 @@ from datetime import datetime
 from django.forms import model_to_dict
 from django.shortcuts import render
 from rest_framework.decorators import api_view
-from group_challenges.models import GroupChallengesModel, ParticipantsInGroupChallengeModel
+from group_challenges.models import GroupChallengesModel, GuidelinesOfGroupChallengeModel, ParticipantsInGroupChallengeModel, RulesOfGroupChallengeModel
 from group_challenges.serializers import AddNewUserInGroupChallengeSerializer, GetAllParticipantsOfGroupChallengeSerializer, GetGroupChallengesSerializer, UpdateUserParticipationStatusInGroupChallengeSerializer, UploadVideoOfUserGroupChallengeSerializer
 from rest_framework.response import Response
 from response import Response as ResponseData
@@ -33,6 +33,8 @@ def get_all_group_challenges(request):
             is_upcoming = serializer.data['is_upcoming'] 
             sort_by = serializer.data['sort_by']
             age_group = serializer.data['age_group']
+            # start_date = serializer.data['start_date']
+            # end_date = serializer.data['end_date']
             page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
             page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
             page_no = page_number
@@ -82,6 +84,15 @@ def get_all_group_challenges(request):
                     challenges_data[i]['is_past_competition'] = True
                 if(challenges_data[i]['start_date'] > today_date ):
                     challenges_data[i]['is_future_competition'] = True
+                challenges_data[i]['challenge_rules'] = RulesOfGroupChallengeModel.objects.values().filter().all()
+                for j in range(0,len(challenges_data[i]['challenge_rules'])):
+                    challenges_data[i]['challenge_rules'][j].pop('created_at')
+                    challenges_data[i]['challenge_rules'][j].pop('updated_at')
+                challenges_data[i]['challenge_guidelines'] = GuidelinesOfGroupChallengeModel.objects.values().filter().all()
+                for j in range(0,len(challenges_data[i]['challenge_guidelines'])):
+                    challenges_data[i]['challenge_guidelines'][j].pop('created_at')
+                    challenges_data[i]['challenge_guidelines'][j].pop('updated_at')
+                    challenges_data[i]['challenge_guidelines'][j].pop('group_challenge_id')
                 challenges_data[i]['total_participants'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data[i]['id']).all())
                 challenges_data[i]['total_videos_submitted'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data[i]['id'],has_submitted_video=True).all())
             if(sort_by is not None):
