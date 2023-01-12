@@ -26,29 +26,43 @@ def get_all_group_challenges(request):
                    )
         serializer = GetGroupChallengesSerializer(data=data)
         if serializer.is_valid():
-            date = serializer.data['date']
+            print("true")
             user_id = serializer.data['user_id']
             is_finished = serializer.data['is_finished'] 
             is_ongoing = serializer.data['is_ongoing'] 
             is_upcoming = serializer.data['is_upcoming'] 
+            sort_by = serializer.data['sort_by']
+            age_group = serializer.data['age_group']
             page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
             page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
-
             page_no = page_number
             page_size = page_size_param
             start=(page_no-1)*page_size
             end=page_no*page_size
+            if(age_group is not None):
+                min_age = str(age_group).split("-")[0]
+                max_age = str(age_group).split("-")[1]
             today_date = datetime.now().date()
-            if date is not None:
-                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=date,end_date__gte=date).order_by('-created_at').all()[start:end]
-            elif is_finished is not None:
-                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date).order_by('-created_at').all()[start:end]
-            elif is_ongoing is not None:
-                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date).order_by('-created_at').all()[start:end]
-            elif is_upcoming is not None:
-                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date).order_by('-created_at').all()[start:end]
+            if is_finished is not None and age_group is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date).all()[start:end]
+            elif is_finished is not None and age_group is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date,min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
+            elif is_finished is None and age_group is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
+            elif is_ongoing is not None and age_group is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date).all()[start:end]
+            elif is_ongoing is not None and age_group is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date,min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
+            elif is_ongoing is None and age_group is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
+            elif is_upcoming is not None and age_group is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date).all()[start:end]
+            elif is_upcoming is not None and age_group is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date,min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
+            elif is_upcoming is None and age_group is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
             else:
-                challenges_data = GroupChallengesModel.objects.values().order_by('-created_at').all()[start:end]
+                challenges_data = GroupChallengesModel.objects.values().all()[start:end]
             if len(challenges_data) == 0:
                     return Response(
                        ResponseData.success(
@@ -68,10 +82,20 @@ def get_all_group_challenges(request):
                     challenges_data[i]['is_past_competition'] = True
                 if(challenges_data[i]['start_date'] > today_date ):
                     challenges_data[i]['is_future_competition'] = True
-                challenges_data[i].pop('created_at')
-                challenges_data[i].pop('updated_at')
                 challenges_data[i]['total_participants'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data[i]['id']).all())
                 challenges_data[i]['total_videos_submitted'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data[i]['id'],has_submitted_video=True).all())
+            if(sort_by is not None):
+                if(sort_by == 'Latest to Oldest'):
+                    challenges_data = sorted(challenges_data, key=lambda d: d['created_at'],reverse=True)
+                elif(sort_by == 'Oldest to Latest'):
+                    challenges_data = sorted(challenges_data, key=lambda d: d['created_at'])
+                elif(sort_by == 'Max to min participants'):
+                    challenges_data = sorted(challenges_data, key=lambda d: d['total_participants'],reverse=True)
+                elif(sort_by == 'Min to max participants'):
+                    challenges_data = sorted(challenges_data, key=lambda d: d['total_participants'])            
+            for i in range(0,len(challenges_data)):
+                challenges_data[i].pop('created_at')
+                challenges_data[i].pop('updated_at')
             return Response(
                        ResponseData.success(
                            challenges_data, "Challenges fetched successfully"),

@@ -7,18 +7,20 @@ from group_challenges.models import GroupChallengesModel
 
 class GetGroupChallengesSerializer(serializers.ModelSerializer):
     """Serializer for getting group challenges"""
-    date = serializers.CharField(default=None)
     page_no = serializers.IntegerField(default=None)
     page_size = serializers.IntegerField(default=None)
     user_id = serializers.IntegerField(default=None)
     is_finished = serializers.BooleanField(default=None)
     is_ongoing = serializers.BooleanField(default=None)
     is_upcoming = serializers.BooleanField(default=None)
+    sort_by = serializers.CharField(default=None)
+    age_group = serializers.CharField(default=None)
+
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = GroupChallengesModel
-        fields = ["user_id",'page_no','page_size','date','is_finished','is_ongoing','is_upcoming']
+        fields = ["user_id",'page_no','page_size','is_finished','is_ongoing','is_upcoming','sort_by','age_group']
 
 class GetAllParticipantsOfGroupChallengeSerializer(serializers.ModelSerializer):
     """Serializer for getting all participants in group challenge"""
