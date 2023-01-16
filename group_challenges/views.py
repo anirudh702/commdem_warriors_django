@@ -93,8 +93,17 @@ def get_all_group_challenges(request):
                     challenges_data[i]['challenge_guidelines'][j].pop('created_at')
                     challenges_data[i]['challenge_guidelines'][j].pop('updated_at')
                     challenges_data[i]['challenge_guidelines'][j].pop('group_challenge_id')
+                challenges_data[i]['is_user_participating'] = False
+                challenges_data[i]['has_user_submitted_video'] = False
+                print(challenges_data[i]['id'])
+                is_user_participant = ParticipantsInGroupChallengeModel.objects.filter(user_id=user_id,group_challenge_id=challenges_data[i]['id']).first()
+                if is_user_participant is not None:
+                    challenges_data[i]['is_user_participating'] = True
+                    challenges_data[i]['has_user_submitted_video'] = is_user_participant.has_submitted_video
                 challenges_data[i]['total_participants'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data[i]['id']).all())
                 challenges_data[i]['total_videos_submitted'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data[i]['id'],has_submitted_video=True).all())
+                if is_user_participant is not None:
+                    challenges_data[i]['is_user_participating'] = True
             if(sort_by is not None):
                 if(sort_by == 'Latest to Oldest'):
                     challenges_data = sorted(challenges_data, key=lambda d: d['created_at'],reverse=True)
@@ -222,11 +231,12 @@ def upload_video_for_group_challenge(request):
     """Function to upload challenge video of a user"""
     try:
         data = request.data
+        print(f"data {data}")
         serializer = UploadVideoOfUserGroupChallengeSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user_id"]
             group_challenge_id = serializer.data["group_challenge_id"]
-            video_file = serializer.data['video_file']
+            video_file = request.FILES['video_file']
             user = UserModel.objects.filter(id=user_id,is_active=True).first()
             if not user:
                    return Response(
