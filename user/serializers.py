@@ -39,10 +39,12 @@ class UserSignUpSerializer(serializers.ModelSerializer):
 class GetUserProfileSerializer(serializers.ModelSerializer):
     """Serializer for User sign up details"""
     id = serializers.IntegerField()
+    other_user_id = serializers.IntegerField(default=None)
+    
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = UserModel
-        fields = ["id"]
+        fields = ["id","other_user_id"]
 
 class UserSignInSerializer(serializers.ModelSerializer):
     """Serializer for User sign in details"""
@@ -64,6 +66,7 @@ class AddNewPaymentSerializer(serializers.ModelSerializer):
 class UpdateUserPrivacySerializer(serializers.ModelSerializer):
     """Serializer for updating user privacy settings"""
     user=serializers.IntegerField(default=None)
+    other_user=serializers.IntegerField(default=None)
     is_age_hidden=serializers.BooleanField(default=None)
     is_city_hidden=serializers.BooleanField(default=None)
     is_mobile_number_hidden=serializers.BooleanField(default=None)
@@ -71,7 +74,7 @@ class UpdateUserPrivacySerializer(serializers.ModelSerializer):
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = UserPrivacyModel
-        fields = ["user","is_age_hidden","is_city_hidden","is_mobile_number_hidden","is_designation_title_hidden"]
+        fields = ["user","other_user","is_age_hidden","is_city_hidden","is_mobile_number_hidden","is_designation_title_hidden"]
 
 class AddUserSubscriptionSerializer(serializers.ModelSerializer):
     """Serializer for adding new subscription details of a user"""

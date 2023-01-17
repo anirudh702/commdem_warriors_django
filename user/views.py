@@ -9,7 +9,7 @@ from notifications.views import send_notification_to_admin
 from redeemPoints.models import RedeemPointsModel
 from referralCode.models import ReferralCodeModel
 from subscription.models import SubscriptionModel
-from user.models import UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel
+from user.models import UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel, UserWisePrivacyModel
 from rest_framework.response import Response
 from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetUserProfileSerializer, GetUserSubscriptionSerializer, UpdateUserPrivacySerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
@@ -538,6 +538,7 @@ def getAllUsersDetails(request):
     try:
         request_data = request.data
         print(request_data)
+        user_id = request.data['user_id']
         page_number = int(request_data['page_no'])
         page_size_param = int(request_data['page_size'])
         search_param = request_data['search_param'] if 'search_param' in request.data else ""
@@ -548,6 +549,15 @@ def getAllUsersDetails(request):
         print(start)
         print(end)
         print(f"request_data {request_data}")
+        get_all_users = UserModel.objects.values().filter(is_active=True).exclude(id=user_id).all()
+        for i in range(0,len(get_all_users)):
+            is_relation_there = UserWisePrivacyModel.objects.filter(is_active=True,my_details_id=user_id,other_user_details_id=get_all_users[i]['id']).get()
+            if is_relation_there is None:
+                new_relation_data = UserWisePrivacyModel.objects.create(
+                my_details_id=user_id,
+                other_user_details_id=get_all_users[i]['id'],
+            )
+                new_relation_data.save()
         if(request_data['filterByCategory'] == "" and request_data['filterByDesignation'] == "" and request_data['sortBy'] == "" and search_param == "" ):
            users_data = UserModel.objects.values().filter(is_active=True).order_by('-joining_date').all()[start:end]
         elif(request_data['sortBy'] == "Age (max to min)" and request_data['filterByDesignation'] == ""):
@@ -977,6 +987,45 @@ def updateUserPrivacyDetails(request):
         )
 
 @api_view(["POST"])
+def updateIndividualUserWisePrivacyDetails(request):
+    """Function to update user privacy details for specific user""" 
+    try:
+        data = request.data
+        print(data)
+        serializer = UpdateUserPrivacySerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data['user']
+            other_user_id = serializer.data['other_user']
+            if serializer.data['is_age_hidden'] is not None:
+                privacy_details = UserWisePrivacyModel.objects.filter(my_details_id=user_id,other_user_details_id=other_user_id).get()
+                privacy_details.is_my_age_hidden = serializer.data['is_age_hidden']
+                privacy_details.save()
+            elif serializer.data['is_city_hidden'] is not None:
+                privacy_details = UserWisePrivacyModel.objects.filter(my_details_id=user_id,other_user_details_id=other_user_id).get()
+                privacy_details.is_my_city_hidden = serializer.data['is_city_hidden']
+                privacy_details.save()
+            elif serializer.data['is_mobile_number_hidden'] is not None:
+                privacy_details = UserWisePrivacyModel.objects.filter(my_details_id=user_id,other_user_details_id=other_user_id).get()
+                privacy_details.is_my_mobile_number_hidden = serializer.data['is_mobile_number_hidden']
+                privacy_details.save()
+            elif serializer.data['is_designation_title_hidden'] is not None:
+                privacy_details = UserWisePrivacyModel.objects.filter(my_details_id=user_id,other_user_details_id=other_user_id).get()
+                privacy_details.is_my_designation_title_hidden = serializer.data['is_designation_title_hidden']
+                privacy_details.save()
+            return Response(
+                ResponseData.success_without_data(
+                    "Details updated successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
 def getUserProfileDetails(request):
     """Function to get user profile details based on user id"""
     try:
@@ -1073,6 +1122,41 @@ def getUserPrivacyDetails(request):
                     status=status.HTTP_201_CREATED,
                 )
             user_privacy_details = UserPrivacyModel.objects.values().filter(user_id=user_id).all()
+            for i in range(0,len(user_privacy_details)):
+                user_privacy_details[0].pop('created_at')
+                user_privacy_details[0].pop('updated_at')
+            return Response(
+                ResponseData.success(
+                    user_privacy_details, " Privacy details fetched successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def getIndividualUserWisePrivacyDetails(request):
+    """Function to get user privacy details for individual user wise"""
+    try:
+        data = request.data
+        print(data)
+        serializer = GetUserProfileSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["id"]
+            other_user_id = serializer.data['other_user_id']
+            user = UserModel.objects.filter(
+                id=user_id,is_active=True).first()
+            if not user:
+                return Response(
+                    ResponseData.error(
+                        "User id is invalid"),
+                    status=status.HTTP_201_CREATED,
+                )
+            user_privacy_details = UserWisePrivacyModel.objects.values().filter(my_details_id=user_id,other_user_details_id=other_user_id).all()
             for i in range(0,len(user_privacy_details)):
                 user_privacy_details[0].pop('created_at')
                 user_privacy_details[0].pop('updated_at')

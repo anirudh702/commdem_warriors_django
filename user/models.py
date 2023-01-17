@@ -140,3 +140,16 @@ class UserPrivacyModel(models.Model):
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()
+
+class UserWisePrivacyModel(models.Model):
+    """Model for storing privacy status of user for specific user wise"""
+    id = models.AutoField(primary_key=True)
+    my_details = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True,related_name='base_user_details')
+    other_user_details = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
+    is_my_age_hidden = models.BooleanField(default=True)
+    is_my_city_hidden = models.BooleanField(default=True)
+    is_my_mobile_number_hidden = models.BooleanField(default=True)
+    is_my_designation_title_hidden = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()

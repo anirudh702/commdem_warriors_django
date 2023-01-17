@@ -64,7 +64,9 @@ INSTALLED_APPS = [
     'voiceAssistant',
     'positive_affirmations',
     'workout',
-    'group_challenges'
+    'group_challenges',
+    'oneToOneChatModule',
+    'channels'
     # 'background_task'
 ]
 
@@ -101,6 +103,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'commdem_warriors_backend.wsgi.application'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+# ASGI_APPLICATION = "commdem_warriors_backend.asgi.application"
 
 
 # Database
