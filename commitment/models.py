@@ -112,7 +112,7 @@ def next_weekday(d, weekday):
 class UserNumberOfCommitmentForNextWeekModel(models.Model):
     """Model for storing minimum number of commitments user wise for next week"""
     id = models.AutoField(primary_key=True)
-    user = models.OneToOneField(UserModel, on_delete=models.CASCADE,blank=True,null=True,db_index=True)
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE,blank=True)
     min_no_of_food_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(3), MaxValueValidator(7)])
     min_no_of_water_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(4), MaxValueValidator(7)])
     min_no_of_exercise_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(3), MaxValueValidator(7)])

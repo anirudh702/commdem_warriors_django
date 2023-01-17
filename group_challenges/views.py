@@ -130,6 +130,98 @@ def get_all_group_challenges(request):
         )
 
 @api_view(["POST"])
+def get_user_group_challenges(request):
+    """Function to get group challenges in which user has participated"""
+    try:
+        data = request.data
+        print(f"data {data}")
+        user = UserModel.objects.filter(id=request.data['user_id'],is_active=True).first()
+        if not user:
+                   return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+        serializer = GetGroupChallengesSerializer(data=data)
+        if serializer.is_valid():
+            print("true")
+            user_id = serializer.data['user_id']
+            is_ongoing = serializer.data['is_ongoing'] 
+            is_finished = serializer.data['is_finished'] 
+            sort_by = serializer.data['sort_by']
+            page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
+            page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
+            page_no = page_number
+            page_size = page_size_param
+            start=(page_no-1)*page_size
+            end=page_no*page_size
+            today_date = datetime.now().date()
+            final_list = []
+            if is_ongoing is not None:
+                total_challenges_data = ParticipantsInGroupChallengeModel.objects.values().filter(user_id=user_id,
+                group_challenge__start_date__lte=today_date,group_challenge__end_date__gte=today_date).all()[start:end]
+            elif is_finished is not None:
+                total_challenges_data = ParticipantsInGroupChallengeModel.objects.values().filter(user_id=user_id,
+                group_challenge__end_date__lt=today_date).all()[start:end]
+            else:
+                total_challenges_data = ParticipantsInGroupChallengeModel.objects.values().filter(user_id=user_id).all()[start:end]
+            for i in range(0,len(total_challenges_data)):
+                if is_ongoing is not None:
+                    challenges_data = GroupChallengesModel.objects.values().filter(id=total_challenges_data[i]["group_challenge_id"],start_date__lte=today_date,end_date__gte=today_date).get()
+                elif is_finished is not None:
+                    challenges_data = GroupChallengesModel.objects.values().filter(id=total_challenges_data[i]["group_challenge_id"],end_date__lt=today_date).get()
+                else:
+                    challenges_data = GroupChallengesModel.objects.values().filter(id=total_challenges_data[i]["group_challenge_id"],).get()
+                challenges_data['is_past_competition'] = False
+                challenges_data['is_future_competition'] = False
+                if(challenges_data['end_date'] < today_date ):
+                    challenges_data['is_past_competition'] = True
+                if(challenges_data['start_date'] > today_date ):
+                    challenges_data['is_future_competition'] = True
+                challenges_data['challenge_rules'] = RulesOfGroupChallengeModel.objects.values().filter().all()
+                for j in range(0,len(challenges_data['challenge_rules'])):
+                    challenges_data['challenge_rules'][j].pop('created_at')
+                    challenges_data['challenge_rules'][j].pop('updated_at')
+                challenges_data['challenge_guidelines'] = GuidelinesOfGroupChallengeModel.objects.values().filter().all()
+                for j in range(0,len(challenges_data['challenge_guidelines'])):
+                    challenges_data['challenge_guidelines'][j].pop('created_at')
+                    challenges_data['challenge_guidelines'][j].pop('updated_at')
+                    challenges_data['challenge_guidelines'][j].pop('group_challenge_id')
+                challenges_data['has_user_submitted_video'] = False
+                is_user_participant = ParticipantsInGroupChallengeModel.objects.filter(user_id=user_id,group_challenge_id=challenges_data['id']).first()
+                if is_user_participant is not None:
+                    challenges_data['is_user_participating'] = True
+                    challenges_data['has_user_submitted_video'] = is_user_participant.has_submitted_video
+                challenges_data['total_participants'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data['id']).all())
+                challenges_data['total_videos_submitted'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data['id'],has_submitted_video=True).all())
+                if is_user_participant is not None:
+                    challenges_data['is_user_participating'] = True
+                final_list.append(challenges_data)
+            if(sort_by is not None):
+                if(sort_by == 'Latest to Oldest'):
+                    final_list = sorted(final_list, key=lambda d: d['created_at'],reverse=True)
+                elif(sort_by == 'Oldest to Latest'):
+                    final_list = sorted(final_list, key=lambda d: d['created_at'])
+                elif(sort_by == 'Max to min participants'):
+                    final_list = sorted(final_list, key=lambda d: d['total_participants'],reverse=True)
+                elif(sort_by == 'Min to max participants'):
+                    final_list = sorted(final_list, key=lambda d: d['total_participants']) 
+            for i in range(0,len(final_list)):           
+                final_list[i].pop('created_at')
+                final_list[i].pop('updated_at')
+            return Response(
+                       ResponseData.success(
+                           final_list, "User Challenges fetched successfully"),
+                       status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
 def get_all_participants_of_group_challenge(request):
     """Function to get all users participated in group challenge"""
     try:

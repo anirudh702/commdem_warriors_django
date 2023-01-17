@@ -41,11 +41,9 @@ def get_workout_of_today_of_user(request):
             todays_date = str(datetime.now()).split(" ")[0]
             commitment_data = CommitmentModel.objects.values().filter(user_id=user_id,category_id=3).filter(Q(commitment_date__icontains=todays_date)).first()
             if commitment_data is None:
-                       return Response(
-                       ResponseData.success(
-                           [], "No commitment found"),
-                       status=status.HTTP_201_CREATED)
-            workout_data = WorkoutModel.objects.values().filter(
+                       workout_data = WorkoutModel.objects.values().filter().order_by('level_of_workout_id').all()
+            else: 
+               workout_data = WorkoutModel.objects.values().filter(
                 workout_name_id=commitment_data['commitment_name_id']
                 ).order_by('level_of_workout_id').all()
             print(f"workout_data {workout_data}")
