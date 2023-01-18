@@ -551,7 +551,7 @@ def getAllUsersDetails(request):
         print(f"request_data {request_data}")
         get_all_users = UserModel.objects.values().filter(is_active=True).exclude(id=user_id).all()
         for i in range(0,len(get_all_users)):
-            is_relation_there = UserWisePrivacyModel.objects.filter(is_active=True,my_details_id=user_id,other_user_details_id=get_all_users[i]['id']).get()
+            is_relation_there = UserWisePrivacyModel.objects.filter(my_details_id=user_id,other_user_details_id=get_all_users[i]['id']).first()
             if is_relation_there is None:
                 new_relation_data = UserWisePrivacyModel.objects.create(
                 my_details_id=user_id,

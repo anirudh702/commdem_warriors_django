@@ -1,12 +1,9 @@
-
 from pyngrok import ngrok
 
-# Setting an auth token allows us to open multiple
-# tunnels at the same time
-ngrok.set_auth_token("2GV01CquWMr9nwEldUElziy1Ag8_3zH1AcPkfotG7iRC3oW7T")
-
-# <NgrokTunnel: "http://<public_sub1>.ngrok.io" -> "http://localhost:80">
-# ngrok_tunnel1 = ngrok.connect()
-# <NgrokTunnel: "http://<public_sub2>.ngrok.io" -> "http://localhost:8000">
-ngrok_tunnel2 = ngrok.connect(8000)
-print(f"ngrok_tunnel2 {ngrok_tunnel2}")
+# Open a HTTP tunnel on the default port 80
+# <NgrokTunnel: "http://<public_sub>.ngrok.io" -> "http://localhost:80">
+http_tunnel = ngrok.connect()
+# Open a SSH tunnel
+# <NgrokTunnel: "tcp://0.tcp.ngrok.io:12345" -> "localhost:22">
+ssh_tunnel = ngrok.connect(22, "tcp")
+print(f"ssh_tunnel {ssh_tunnel}")

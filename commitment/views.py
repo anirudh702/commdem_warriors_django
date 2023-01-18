@@ -425,6 +425,7 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             list_data = {}
             user_id = serializer.data["user_id"]
             start_date_of_week = str(datetime.now() - timedelta(days=datetime.now().weekday())).split(" ")[0]
+            print(f"start_date_of_week {start_date_of_week}")
             todays_date = str(datetime.now()).split(" ")[0]
             isSunday = False
             list_data['did_user_add_commitment_for_next_week'] = False
