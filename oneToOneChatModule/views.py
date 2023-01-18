@@ -1,3 +1,4 @@
+import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from oneToOneChatModule.models import OneToOneChatModel, OneToOneFilesSharedOnChatModel
@@ -6,6 +7,7 @@ from response import Response as ResponseData
 from rest_framework import status
 from django.core.files.storage import FileSystemStorage
 from user.models import UserModel
+from aiohttp import web
 
 # Create your views here.
 @api_view(["POST"])
@@ -34,6 +36,8 @@ def add_new_chat_between_two_users(request):
                     new_file_data.save()
                     fs = FileSystemStorage(location='static/')
                     fs.save(files_path[i].name, files_path[i])
+            # return web.Response(text=json.dumps(ResponseData.success_without_data(
+            #         "New chat added successfully"),), status=200)
             return Response(
                 ResponseData.success_without_data(
                     "New chat added successfully"),
@@ -150,3 +154,9 @@ def update_user_participation_for_group_challenge(request):
         return Response(
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+from django.shortcuts import render
+
+def chat_box(request, chat_box_name):
+    # we will get the chatbox name from the url
+    return render(request, "chatbox.html", {"chat_box_name": chat_box_name})

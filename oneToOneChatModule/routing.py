@@ -1,30 +1,17 @@
-# from channels.auth import AuthMiddlewareStack
-# from channels.routing import ProtocolTypeRouter, URLRouter
-# from django.urls import re_path
-# from oneToOneChatModule import consumers
+from os import path
+from channels.auth import AuthMiddlewareStack
+import sys
+sys.path.append('/Users/anirudh.chawla/python_django/commdem_warriors_same_database')
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.urls import re_path
+from oneToOneChatModule import consumer
 
-# # URLs that handle the WebSocket connection are placed here.
-# websocket_urlpatterns=[
-#                     re_path(
-#                         r"ws/chat/(?P<chat_box_name>\w+)/$", consumers.ChatRoomConsumer.as_asgi()
-#                     ),
-#                 ]
+# URLs that handle the WebSocket connection are placed here.
 
-# application = ProtocolTypeRouter( 
-#     {
-#         "websocket": AuthMiddlewareStack(
-#             URLRouter(
-#                websocket_urlpatterns
-#             )
-#         ),
-#     }
-# )
-
-from channels.routing import route
-from oneToOneChatModule.consumers import ws_connect, ws_disconnect
-
-
-channel_routing = [
-    route('websocket.connect', ws_connect),
-    route('websocket.disconnect', ws_disconnect),
-]
+application = ProtocolTypeRouter({
+    'websocket':AuthMiddlewareStack(
+            URLRouter([
+            path('whole1/',consumer.PracticeConsumer)
+            ])
+        )
+})
