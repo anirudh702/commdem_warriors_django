@@ -18,8 +18,11 @@ from django.urls import path,include
 from graphene_django.views import GraphQLView
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
+from oneToOneChatModule.views import chat_box
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("chat/<str:chat_box_name>/", chat_box, name="chat"),
     path('user_app/', include("user.urls")),
     path('commitment_app/', include("commitment.urls")),
     path('subscription_app/', include("subscription.urls")),

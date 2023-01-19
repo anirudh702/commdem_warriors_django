@@ -25,8 +25,6 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -85,7 +83,7 @@ ROOT_URLCONF = 'commdem_warriors_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -103,7 +101,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'commdem_warriors_backend.wsgi.application'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
-# ASGI_APPLICATION = "commdem_warriors_backend.asgi.application"
+ASGI_APPLICATION = "commdem_warriors_backend.asgi.application"
+TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
+
 
 
 # Database
@@ -269,3 +269,10 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
 TIME_ZONE =  'Asia/Kolkata'
+
+ASGI_APPLICATION = "commdem_warriors_backend.routing.application" #routing.py will be created later
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': "channels.layers.InMemoryChannelLayer"
+        }
+    }
