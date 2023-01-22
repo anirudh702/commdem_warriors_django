@@ -11,6 +11,7 @@ class OneToOneChatModel(models.Model):
     from_user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True,related_name='from_user_details')
     to_user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
     chat_message = models.CharField(max_length=1000,blank=True,default='')
+    is_message_seen = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()

@@ -16,3 +16,12 @@ class AddNewChatSerializer(serializers.ModelSerializer):
         """Meta class to change behaviour of model fields"""
         model = OneToOneChatModel
         fields = ["from_user_id","to_user_id","chat_message","files_path"]
+
+class GetUsersWithChatSerializer(serializers.ModelSerializer):
+    """Serializer for getting users details with whom particular user did chat"""
+    user_id = serializers.IntegerField(default=None)
+    
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = OneToOneChatModel
+        fields = ["user_id"]

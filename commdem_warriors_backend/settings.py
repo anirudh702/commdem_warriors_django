@@ -268,7 +268,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
-TIME_ZONE =  'Asia/Kolkata'
+TIME_ZONE = 'Asia/Kolkata'
+
+# USE_TZ = True
 
 ASGI_APPLICATION = "commdem_warriors_backend.routing.application" #routing.py will be created later
 CHANNEL_LAYERS = {

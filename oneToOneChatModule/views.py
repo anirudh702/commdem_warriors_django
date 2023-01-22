@@ -1,13 +1,13 @@
-import json
+from datetime import timedelta
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from oneToOneChatModule.models import OneToOneChatModel, OneToOneFilesSharedOnChatModel
-from oneToOneChatModule.serializers import AddNewChatSerializer
+from oneToOneChatModule.serializers import AddNewChatSerializer, GetUsersWithChatSerializer
 from response import Response as ResponseData
 from rest_framework import status
 from django.core.files.storage import FileSystemStorage
 from user.models import UserModel
-from aiohttp import web
+from django.db.models import Q
 
 # Create your views here.
 @api_view(["POST"])
@@ -54,44 +54,46 @@ def add_new_chat_between_two_users(request):
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
 @api_view(["POST"])
-def upload_video_for_group_challenge(request):
-    """Function to upload challenge video of a user"""
+def display_chat_users_details(request):
+    """Function to get list of users with whom particular user did chat"""
     try:
         data = request.data
-        print(f"data {data}")
-        serializer = UploadVideoOfUserGroupChallengeSerializer(data=data)
+        serializer = GetUsersWithChatSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user_id"]
-            group_challenge_id = serializer.data["group_challenge_id"]
-            video_file = request.FILES['video_file']
-            user = UserModel.objects.filter(id=user_id,is_active=True).first()
-            if not user:
-                   return Response(
-                       ResponseData.error("User id is invalid"),
-                       status=status.HTTP_200_OK,
-                   )
-            group_challenge = GroupChallengesModel.objects.filter(id=group_challenge_id).first()
-            if not group_challenge:
-                   return Response(
-                       ResponseData.error("Group challenge id is invalid"),
-                       status=status.HTTP_200_OK,
-                   )
-            user_challenge_data = ParticipantsInGroupChallengeModel.objects.filter(user_id=user_id,group_challenge_id=group_challenge_id,hide_from_user=False).get()
-            if user_challenge_data is None:
+            users_data = UserModel.objects.all().exclude(id=user_id)
+            if len(users_data) == 0:
                 return Response(
-                       ResponseData.error("You are not a participant yet. Please participate first."),
-                       status=status.HTTP_200_OK,
-                   )
-            user_challenge_data.challenge_video = f"static/{video_file}"
-            user_challenge_data.has_submitted_video = True
-            user_challenge_data.save()
-            if video_file!="" or video_file is not None:
-                 fs = FileSystemStorage(location='static/')
-                 fs.save(video_file.name, video_file)
-            return Response(
                 ResponseData.success_without_data(
-                    "Video uploaded successfully"),
+                    "No other user found in the group"),
+                status=status.HTTP_201_CREATED,
+            )
+            final_data = []
+            for i in range(0,len(users_data)):
+                print("sdcdscsd")
+                mapData = {}
+                chat_data = OneToOneChatModel.objects.filter((Q(from_user_id=user_id) & Q(to_user_id=users_data[i].id)) | (Q(from_user_id=users_data[i].id) & Q(to_user_id=user_id)) ).order_by('-created_at').first()
+                print(f"chat_data {chat_data}")
+                if chat_data is not None:
+                    mapData['user_full_name'] = users_data[i].full_name
+                    mapData['user_id'] = users_data[i].id
+                    mapData['user_profile_pic'] = str(users_data[i].profile_pic)
+                    mapData['latest_message'] = chat_data.chat_message
+                    mapData['is_message_seen'] = chat_data.is_message_seen
+                    mapData['created_at'] = chat_data.created_at + timedelta(hours=5, minutes=30)
+                    final_data.append(mapData)
+            final_data = sorted(final_data, key=lambda d: d['created_at'],reverse=True)
+            if(len(final_data) == 0):  
+                return Response(
+                ResponseData.success_without_data(
+                    "No details found"),
+                status=status.HTTP_201_CREATED,
+            )            
+            return Response(
+                ResponseData.success(final_data,
+                    "Details fetched successfully"),
                 status=status.HTTP_201_CREATED,
             )   
         for error in serializer.errors:
@@ -105,58 +107,3 @@ def upload_video_for_group_challenge(request):
             ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-@api_view(["POST"])
-def update_user_participation_for_group_challenge(request):
-    """Function to update user particiation for group challenge"""
-    try:
-        data = request.data
-        serializer = UpdateUserParticipationStatusInGroupChallengeSerializer(data=data)
-        if serializer.is_valid():
-            user_id = serializer.data["user_id"]
-            group_challenge_id = serializer.data["group_challenge_id"]
-            want_to_participate = serializer.data['want_to_participate']
-            user = UserModel.objects.filter(id=user_id,is_active=True).first()
-            if not user:
-                   return Response(
-                       ResponseData.error("User id is invalid"),
-                       status=status.HTTP_200_OK,
-                   )
-            group_challenge = GroupChallengesModel.objects.filter(id=group_challenge_id).first()
-            if not group_challenge:
-                   return Response(
-                       ResponseData.error("Group challenge id is invalid"),
-                       status=status.HTTP_200_OK,
-                   )
-            user_challenge_data = ParticipantsInGroupChallengeModel.objects.filter(user_id=user_id,group_challenge_id=group_challenge_id).get()
-            if user_challenge_data is None:
-                return Response(
-                       ResponseData.error("You are not a participant yet. Please participate first."),
-                       status=status.HTTP_200_OK,
-                   )
-            if want_to_participate == False:
-                user_challenge_data.hide_from_user = True
-                user_challenge_data.save()
-            else:
-                user_challenge_data.hide_from_user = False
-                user_challenge_data.save()
-            return Response(
-                ResponseData.success_without_data(
-                    "Status updated successfully"),
-                status=status.HTTP_201_CREATED,
-            )   
-        for error in serializer.errors:
-            print(serializer.errors[error][0])
-        return Response(
-            ResponseData.error(serializer.errors[error][0]),
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    except Exception as exception:
-        return Response(
-            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-from django.shortcuts import render
-
-def chat_box(request, chat_box_name):
-    # we will get the chatbox name from the url
-    return render(request, "chatbox.html", {"chat_box_name": chat_box_name})
