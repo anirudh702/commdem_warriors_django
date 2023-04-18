@@ -7,16 +7,16 @@ import gtts
 import calendar
 from rest_framework.decorators import api_view
 from location.models import CitiesModel
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser, UserNumberOfCommitmentForNextWeekModel, next_weekday
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentModel,CommitmentCategoryModel,CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser, UserCommitmentsForNextWeekModel, next_weekday
 from rest_framework.response import Response
 from commitment.serializers import AddCauseOfCategorySerializer,AddCommitmentCategorySerializer,AddCommitmentNameSerializer, AddUserNumberOfCommitmentsFornextWeekSerializer, GetCauseOfCategorySerializer, GetCommitmentCategorySerializer, GetCommitmentNameSerializer, GetCommitmentsSerializer, GetOtherUsersCommitmentsSerializer, GetUserCommitmentsForCurrentWeekSerializer, UpdateCommitmentsSerializer
 from designation.models import DesignationModel
 from income.models import IncomeModel
-from positive_affirmations.models import UserAffirmationModel
+from positive_affirmations.models import PositiveAffirmationModel, UserAffirmationModel
 from response import Response as ResponseData
 from rest_framework import status
 from subscription.models import SubscriptionLevelModel, SubscriptionModel
-from user.models import UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel, keysToUpdateInFrontEndModel
+from user.models import UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel, keysToUpdateInFrontEndModel
 from django.db.models import Q
 
 from voiceAssistant.models import userPreferredVoiceLanguageModel, voiceAssistantAfterUpdateMessageModel
@@ -59,7 +59,7 @@ def add_new_commitment(request):
             print(f"commitment_category_data {commitment_category_data}")
             already_exists = False
             for i in range(0,commitment_category_data.count()):
-                if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=0)).split(' ')[0]):
+                if str(commitment_category_data[i].commitment_date).__contains__(str(datetime.now() + timedelta(days=1)).split(' ')[0]):
                     already_exists = True
                     break
             if already_exists:
@@ -69,7 +69,7 @@ def add_new_commitment(request):
                     status=status.HTTP_201_CREATED,
                 )
             elif(category_id == '3'):
-                data_exists = ExerciseModel.objects.filter(Q(commitment_date__icontains=str(datetime.now() + timedelta(days=0)).split('T')[0])).filter(user_id=user_id,
+                data_exists = ExerciseModel.objects.filter(Q(commitment_date__icontains=str(datetime.now() + timedelta(days=1)).split('T')[0])).filter(user_id=user_id,
                 commitment_name_id=commitment_name_id).first()
                 print(f"commitment_name_id {commitment_name_id}")
                 if not data_exists:
@@ -77,16 +77,24 @@ def add_new_commitment(request):
                 user_id=user_id,
                 commitment_name_id=commitment_name_id,
                 time_to_start=time_to_start,
-                commitment_date=datetime.now() + timedelta(days=0),
+                commitment_date=datetime.now() + timedelta(days=1),
             )
                  new_exercise_details.save()
+            commitmentsData = CommitmentModel.objects.filter().order_by('user_id','-total_commitments_done').distinct("user_id")
+            print(f"commitmentsData {commitmentsData}")
+            for i in range(0,len(commitmentsData)):
+                print(f"commitmentsData {commitmentsData[i].user_id}")
+                print(f"commitmentsData {commitmentsData[i].total_commitments_done}")
+                users_data = UserModel.objects.filter(id = commitmentsData[i].user_id).first()
+                users_data.rank = i+1
+                users_data.save()
             final_data.append(CommitmentModel(
                 user_id=user_id,
-                commitment_date=datetime.now() + timedelta(days=0),
+                commitment_date=datetime.now() + timedelta(days=1),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 ))
-        CommitmentModel.objects.bulk_create(final_data)
+        # CommitmentModel.objects.bulk_create(final_data)
         keysToUpdateInFrontEndModel.objects.update(
                 is_commitment_table_updated = True
             )
@@ -271,17 +279,18 @@ def add_no_of_commitments_user_will_do_next_week(request):
         print(f"data {data}")
         serializer = AddUserNumberOfCommitmentsFornextWeekSerializer(data=data)
         if serializer.is_valid():
-            user_id = serializer.data["user"]
+            user_id = serializer.data["user_id"]
             min_no_of_food_commitments = serializer.data["min_no_of_food_commitments"]
             min_no_of_water_commitments = serializer.data["min_no_of_water_commitments"]
             min_no_of_exercise_commitments = serializer.data["min_no_of_exercise_commitments"]
-            new_data = UserNumberOfCommitmentForNextWeekModel.objects.create(
+            new_data = UserCommitmentsForNextWeekModel.objects.create(
                 user_id=user_id,
                 min_no_of_food_commitments=min_no_of_food_commitments,
                 min_no_of_water_commitments=min_no_of_water_commitments,
                 min_no_of_exercise_commitments=min_no_of_exercise_commitments,
                 # min_no_of_challenges=min_no_of_challenges
             )
+            print(type(min_no_of_food_commitments))
             new_data.save()
             return Response(
                 ResponseData.success_without_data(
@@ -393,7 +402,7 @@ def get_no_of_commitments_user_will_do_current_week(request):
         if serializer.is_valid():
             user_id = serializer.data["user_id"]
             todays_date = str(datetime.now()).split(" ")[0]
-            does_data_exists = UserNumberOfCommitmentForNextWeekModel.objects.values().filter(user_id=user_id,start_date__lte=todays_date,end_date__gte=todays_date).all()
+            does_data_exists = UserCommitmentsForNextWeekModel.objects.values().filter(user_id=user_id,start_date__lte=todays_date,end_date__gte=todays_date).all()
             if len(does_data_exists) == 0:
                 return Response(
                 ResponseData.success_without_data(
@@ -426,19 +435,21 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             user_id = serializer.data["user_id"]
             start_date_of_week = str(datetime.now() - timedelta(days=datetime.now().weekday())).split(" ")[0]
             print(f"start_date_of_week {start_date_of_week}")
+            print(calendar.day_name[datetime.now().weekday()])
             todays_date = str(datetime.now()).split(" ")[0]
+            print(f'todays_date {todays_date}')
             isSunday = False
             list_data['did_user_add_commitment_for_next_week'] = False
             if(calendar.day_name[datetime.now().weekday()]=='Sunday'):
                 isSunday = True
                 next_day = datetime.now() + timedelta(days=1)
-                next_sunday = next_weekday(datetime.now(), 6)
+                next_sunday = datetime.now() + timedelta(days=7)
                 print(f"next_day {next_day}")
                 print(f"next_sunday {next_sunday}")
-                didUserAddCommitmentsForNextWeek = UserNumberOfCommitmentForNextWeekModel.objects.values().filter(user_id=user_id,start_date=next_day,end_date=next_sunday).first()
+                didUserAddCommitmentsForNextWeek = UserCommitmentsForNextWeekModel.objects.values().filter(user_id=user_id,start_date=next_day,end_date=next_sunday).first()
                 if didUserAddCommitmentsForNextWeek is not None:
                     list_data['did_user_add_commitment_for_next_week'] = True
-            user_current_week_commitments_promise = UserNumberOfCommitmentForNextWeekModel.objects.values().filter(user_id=user_id,start_date__lte=todays_date,end_date__gte=todays_date).first()
+            user_current_week_commitments_promise = UserCommitmentsForNextWeekModel.objects.values().filter(user_id=user_id,start_date__lte=todays_date,end_date__gte=todays_date).first()
             if user_current_week_commitments_promise is None:
                 return Response(
                 ResponseData.success_without_data(
@@ -544,13 +555,15 @@ def changesInAllCommitment(commitment_data,user_id,user_selected_language='',fir
         commitment_data[i]['category_data'].pop('updated_at')
         commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
         if(commitment_data[i]['category_data']['name'] == 'Exercise'):
-            exercise_timing = ExerciseModel.objects.values().filter(Q(commitment_date__icontains=commitment_date),Q(created_at__icontains=commitment_date),user_id=user_id).first()
+            exercise_timing = ExerciseModel.objects.values().filter(Q(commitment_date__icontains=commitment_date),user_id=user_id).first()
             print(f"exercise_timing {exercise_timing}")
             if exercise_timing is not None:
               commitment_data[i]['commitment_name_data']['positive_affirmation'] =  "I will be honest with myself and " + commitment_data[i]['commitment_name_data']['currentDayName'] + " at any cost"
               commitment_data[i]['commitment_name_data']['time_to_start'] = exercise_timing['time_to_start']
               commitment_data[i]['commitment_name_data']['did_speak_before'] = exercise_timing['did_speak_before']
               commitment_data[i]['commitment_name_data']['did_speak_positive_affirmation'] = exercise_timing['did_speak_positive_affirmation']
+              number_of_positive_affirmations = UserHealthDetailsModel.objects.values().filter(user_id=user_id).get()['number_of_positive_affirmations']
+              commitment_data[i]['commitment_name_data']['positive_affirmations'] = PositiveAffirmationModel.objects.values('name')[0:number_of_positive_affirmations]
               commitment_data[i]['commitment_name_data']['currentDayName'] += f" at {exercise_timing['time_to_start']}"
               commitment_data[i]['commitment_name_data']['successName'] += f" at {exercise_timing['time_to_start']}"
               commitment_data[i]['commitment_name_data']['failureName'] += f" at {exercise_timing['time_to_start']}"
@@ -573,9 +586,11 @@ def changesInOtherCommitments(commitment_data):
                commitment_data[i]['user_data']['city_data'].pop('updated_at')
             income_range_id = UserProfessionalDetailsModel.objects.values().filter(user_id=commitment_data[i]['user_id']).first()
             if income_range_id is not None:
-               commitment_data[i]['user_data']['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
-               commitment_data[i]['user_data']['income_range_data'].pop('created_at')
-               commitment_data[i]['user_data']['income_range_data'].pop('updated_at')
+               income_data = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).first()
+               if income_data is not None:
+                    commitment_data[i]['user_data']['income_range_data'] = income_data
+                    commitment_data[i]['user_data']['income_range_data'].pop('created_at')
+                    commitment_data[i]['user_data']['income_range_data'].pop('updated_at')
             designation = UserProfessionalDetailsModel.objects.values().filter(user_id=commitment_data[i]['user_id']).first()
             if designation is not None:
                commitment_data[i]['user_data']['designation_data'] = DesignationModel.objects.values().filter(id=designation['designation_id']).get()
@@ -867,15 +882,15 @@ def share_user_commitment_on_whatsapp(request):
             message = ""
             for i in range(0,len(commitment_data)):
                    commitment_data[i]['category_data'] = CommitmentCategoryModel.objects.values().filter(id=commitment_data[i]['category_id']).get()
-                   finalMessage += f"{i+1}. {commitment_data[i]['category_data']['name']}\n"
+                   finalMessage += f"{i+1}. {commitment_data[i]['category_data']['name']}\\n"
                    commitment_data[i]['commitment_name_data'] = CommitmentNameModel.objects.values().filter(id=commitment_data[i]['commitment_name_id']).get()
                    if(commitment_data[i]['commitment_date'].date() > datetime.now().date()):
-                    finalMessage += f"-> {commitment_data[i]['commitment_name_data']['name']}\n"
+                    finalMessage += f"-> {commitment_data[i]['commitment_name_data']['name']}\\n"
                    else:
                     if(commitment_data[i]['is_done'] and commitment_data[i]['is_updated']):
-                       finalMessage += f"-> {commitment_data[i]['commitment_name_data']['successName']}\n"
+                       finalMessage += f"-> {commitment_data[i]['commitment_name_data']['successName']}\\n"
                     elif(commitment_data[i]['is_done'] == False and commitment_data[i]['is_updated']):
-                       finalMessage += f"-> {commitment_data[i]['commitment_name_data']['failureName']}\n"
+                       finalMessage += f"-> {commitment_data[i]['commitment_name_data']['failureName']}\\n"
                     else:
                         message += f"{commitment_data[i]['category_data']['name']},"
                         isPending = True
@@ -1028,6 +1043,8 @@ def update_commitment(request):
             ).first()
             commitment_data.is_done = is_done
             commitment_data.is_updated = True
+            if is_done == True:
+                commitment_data.total_commitments_done = CommitmentModel.objects.filter(user_id=user_id,is_done=True,is_updated=True).count() + 1
             commitment_data.save()
             cause_ids = str(cause_id).replace("[","").replace("]","").split(":")
             print(f"cause_ids {cause_ids}")

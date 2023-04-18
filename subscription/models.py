@@ -24,6 +24,7 @@ class SubscriptionModel(models.Model):
     duration = models.CharField(max_length=100,blank=True,unique=False)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    is_active = models.BooleanField(default=True)
     objects = models.Manager()
     class Meta:
         app_label = 'subscription'

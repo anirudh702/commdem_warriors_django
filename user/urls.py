@@ -22,6 +22,7 @@ urlpatterns = [
     path('getUserSubscriptionById/', views.getUserSubscriptionById, name="getUserSubscriptionById"),   
     path('getAllUsersDetails/', views.getAllUsersDetails, name="getAllUsersDetails"),
     path('getAllUnVerifiedUsers/', views.getAllUnVerifiedUsers, name="getAllUnVerifiedUsers"),
-    path('getOverallPerformerOfTheWeek/', views.getOverallPerformerOfTheWeek, name="getOverallPerformerOfTheWeek"),   
+    path('getOverallPerformerOfTheWeek/', views.getOverallPerformerOfTheWeek, name="getOverallPerformerOfTheWeek"),  
+    path('getAllDataOfOverallPerformers/', views.getAllDataOfOverallPerformers, name="getAllDataOfOverallPerformers"),   
     path('getOverallPerformerOfTheWeekCategoryWise/', views.getOverallPerformerOfTheWeekCategoryWise, name="getOverallPerformerOfTheWeekCategoryWise"),
 ]

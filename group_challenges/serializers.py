@@ -10,6 +10,8 @@ class GetGroupChallengesSerializer(serializers.ModelSerializer):
     page_no = serializers.IntegerField(default=None)
     page_size = serializers.IntegerField(default=None)
     user_id = serializers.IntegerField(default=None)
+    min_rating = serializers.IntegerField(default=None)
+    max_rating = serializers.IntegerField(default=None)
     is_finished = serializers.BooleanField(default=None)
     is_ongoing = serializers.BooleanField(default=None)
     is_upcoming = serializers.BooleanField(default=None)
@@ -17,12 +19,12 @@ class GetGroupChallengesSerializer(serializers.ModelSerializer):
     age_group = serializers.CharField(default=None)
     start_date = serializers.CharField(default=None)
     end_date = serializers.CharField(default=None)
-
+    gender = serializers.CharField(default=None)
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = GroupChallengesModel
-        fields = ["start_date","end_date","user_id",'page_no','page_size','is_finished','is_ongoing','is_upcoming','sort_by','age_group']
+        fields = ["gender","start_date","end_date","user_id",'page_no','page_size','is_finished','is_ongoing','is_upcoming','sort_by','age_group','min_rating','max_rating']
 
 class GetAllParticipantsOfGroupChallengeSerializer(serializers.ModelSerializer):
     """Serializer for getting all participants in group challenge"""
@@ -50,11 +52,12 @@ class UploadVideoOfUserGroupChallengeSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(default=None)
     group_challenge_id = serializers.IntegerField(default=None)
     video_file = serializers.FileField(default=None)
+    is_updated_file = serializers.BooleanField(default=False)
 
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = GroupChallengesModel
-        fields = ["user_id",'group_challenge_id','video_file']
+        fields = ["user_id",'group_challenge_id','video_file','is_updated_file']
 
 class UpdateUserParticipationStatusInGroupChallengeSerializer(serializers.ModelSerializer):
     """Serializer for update user participation in a group challenge"""

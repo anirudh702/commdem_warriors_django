@@ -10,6 +10,7 @@ from rest_framework import status
 from django.db.models import Q
 from django.core.files.storage import FileSystemStorage
 from user.models import UserHealthDetailsModel, UserModel
+from commitment.models import CommitmentCategoryModel, CommitmentModel
 
 # Create your views here.
 @api_view(["POST"])
@@ -33,6 +34,9 @@ def get_all_group_challenges(request):
             is_upcoming = serializer.data['is_upcoming'] 
             sort_by = serializer.data['sort_by']
             age_group = serializer.data['age_group']
+            gender = serializer.data['gender']
+            min_rating = serializer.data['min_rating']
+            max_rating = serializer.data['max_rating']
             # start_date = serializer.data['start_date']
             # end_date = serializer.data['end_date']
             page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
@@ -45,24 +49,84 @@ def get_all_group_challenges(request):
                 min_age = str(age_group).split("-")[0]
                 max_age = str(age_group).split("-")[1]
             today_date = datetime.now().date()
-            if is_finished is not None and age_group is None:
+            if is_finished is not None and age_group is None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date,gender=gender).all()[start:end]
+            elif is_finished is not None and age_group is None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_finished is not None and age_group is None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date).all()[start:end]
-            elif is_finished is not None and age_group is not None:
+            elif is_finished is not None and age_group is None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_finished is not None and age_group is not None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date,min_age__lte=min_age,max_age__gte=max_age,gender=gender).all()[start:end]
+            elif is_finished is not None and age_group is not None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date,min_age__lte=min_age,max_age__gte=max_age,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_finished is not None and age_group is not None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date,min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
-            elif is_finished is None and age_group is not None:
+            elif is_finished is not None and age_group is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(end_date__lt=today_date,min_age__lte=min_age,max_age__gte=max_age,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_finished is None and age_group is not None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,gender=gender).all()[start:end]
+            elif is_finished is None and age_group is not None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_finished is None and age_group is not None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
-            elif is_ongoing is not None and age_group is None:
+            elif is_finished is None and age_group is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_ongoing is not None and age_group is None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date,gender=gender).all()[start:end]
+            elif is_ongoing is not None and age_group is None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_ongoing is not None and age_group is None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date).all()[start:end]
-            elif is_ongoing is not None and age_group is not None:
+            elif is_ongoing is not None and age_group is None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_ongoing is not None and age_group is not None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date,min_age__lte=min_age,max_age__gte=max_age,gender=gender).all()[start:end]
+            elif is_ongoing is not None and age_group is not None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date,min_age__lte=min_age,max_age__gte=max_age,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_ongoing is not None and age_group is not None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date,min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
-            elif is_ongoing is None and age_group is not None:
+            elif is_ongoing is not None and age_group is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__lte=today_date,end_date__gte=today_date,min_age__lte=min_age,max_age__gte=max_age,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_ongoing is None and age_group is not None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,gender=gender).all()[start:end]
+            elif is_ongoing is None and age_group is not None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_ongoing is None and age_group is not None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
-            elif is_upcoming is not None and age_group is None:
+            elif is_ongoing is None and age_group is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_upcoming is not None and age_group is None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date,gender=gender).all()[start:end]
+            elif is_upcoming is not None and age_group is None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_upcoming is not None and age_group is None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date).all()[start:end]
-            elif is_upcoming is not None and age_group is not None:
+            elif is_upcoming is not None and age_group is None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_upcoming is not None and age_group is not None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date,min_age__lte=min_age,max_age__gte=max_age,gender=gender).all()[start:end]
+            elif is_upcoming is not None and age_group is not None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date,min_age__lte=min_age,max_age__gte=max_age,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_upcoming is not None and age_group is not None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date,min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
-            elif is_upcoming is None and age_group is not None:
+            elif is_upcoming is not None and age_group is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(start_date__gt=today_date,min_age__lte=min_age,max_age__gte=max_age,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_upcoming is None and age_group is not None and gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,gender=gender).all()[start:end]
+            elif is_upcoming is None and age_group is not None and gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif is_upcoming is None and age_group is not None and min_rating is None:
                 challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age).all()[start:end]
+            elif is_upcoming is None and age_group is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_age__lte=min_age,max_age__gte=max_age,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif gender is not None and min_rating is None:
+                challenges_data = GroupChallengesModel.objects.values().filter(gender=gender).all()[start:end]
+            elif gender is not None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(gender=gender,min_rating=min_rating,max_rating=max_rating).all()[start:end]
+            elif gender is None and min_rating is not None:
+                challenges_data = GroupChallengesModel.objects.values().filter(min_rating=min_rating,max_rating=max_rating).all()[start:end]
             else:
                 challenges_data = GroupChallengesModel.objects.values().all()[start:end]
             if len(challenges_data) == 0:
@@ -72,13 +136,24 @@ def get_all_group_challenges(request):
                        status=status.HTTP_201_CREATED)
             for i in range(0,len(challenges_data)):
                 user_age = UserHealthDetailsModel.objects.filter(user_id=user_id).first().age
+                user_gender = UserHealthDetailsModel.objects.filter(user_id=user_id).first().gender
+                user_rating = 0
+                total_commitments_of_user = CommitmentModel.objects.filter(user_id=user_id).count()
+                total_done_commitments_of_user = CommitmentModel.objects.filter(user_id=user_id,is_done=True,is_updated=True).count()
+                if (total_commitments_of_user) != 0:
+                   user_rating = (total_done_commitments_of_user/total_commitments_of_user)*100
+                else:
+                   user_rating = 0
                 challenges_data[i]['is_user_between_this_age'] = False
+                challenges_data[i]['is_user_rating_between_this_competition_rating'] = False
                 challenges_data[i]['is_participation_allowed'] = False
                 challenges_data[i]['is_past_competition'] = False
                 challenges_data[i]['is_future_competition'] = False
                 if(user_age>=challenges_data[i]['min_age'] and user_age<=challenges_data[i]['max_age']):
                     challenges_data[i]['is_user_between_this_age'] = True
-                if(challenges_data[i]['start_date'] <= today_date and challenges_data[i]['end_date'] >= today_date):
+                if(user_rating>=challenges_data[i]['min_rating'] and user_rating<=challenges_data[i]['max_rating']):
+                    challenges_data[i]['is_user_rating_between_this_competition_rating'] = True
+                if(challenges_data[i]['start_date'] <= today_date and challenges_data[i]['end_date'] >= today_date and challenges_data[i]['gender'].lower() ==  user_gender.lower()):
                     challenges_data[i]['is_participation_allowed'] = True
                 if(challenges_data[i]['end_date'] < today_date ):
                     challenges_data[i]['is_past_competition'] = True
@@ -95,11 +170,13 @@ def get_all_group_challenges(request):
                     challenges_data[i]['challenge_guidelines'][j].pop('group_challenge_id')
                 challenges_data[i]['is_user_participating'] = False
                 challenges_data[i]['has_user_submitted_video'] = False
+                challenges_data[i]['challenge_video'] = ''
                 print(challenges_data[i]['id'])
                 is_user_participant = ParticipantsInGroupChallengeModel.objects.filter(user_id=user_id,group_challenge_id=challenges_data[i]['id']).first()
                 if is_user_participant is not None:
                     challenges_data[i]['is_user_participating'] = True
                     challenges_data[i]['has_user_submitted_video'] = is_user_participant.has_submitted_video
+                    challenges_data[i]['challenge_video'] = f"{is_user_participant.challenge_video}"
                 challenges_data[i]['total_participants'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data[i]['id']).all())
                 challenges_data[i]['total_videos_submitted'] = len(ParticipantsInGroupChallengeModel.objects.filter(group_challenge_id=challenges_data[i]['id'],has_submitted_video=True).all())
                 if is_user_participant is not None:
@@ -112,7 +189,7 @@ def get_all_group_challenges(request):
                 elif(sort_by == 'Max to min participants'):
                     challenges_data = sorted(challenges_data, key=lambda d: d['total_participants'],reverse=True)
                 elif(sort_by == 'Min to max participants'):
-                    challenges_data = sorted(challenges_data, key=lambda d: d['total_participants'])            
+                    challenges_data = sorted(challenges_data, key=lambda d: d['total_participants'])           
             for i in range(0,len(challenges_data)):
                 challenges_data[i].pop('created_at')
                 challenges_data[i].pop('updated_at')
@@ -329,6 +406,7 @@ def upload_video_for_group_challenge(request):
             user_id = serializer.data["user_id"]
             group_challenge_id = serializer.data["group_challenge_id"]
             video_file = request.FILES['video_file']
+            is_updated_file = request.data["is_updated_file"]
             user = UserModel.objects.filter(id=user_id,is_active=True).first()
             if not user:
                    return Response(
@@ -347,6 +425,10 @@ def upload_video_for_group_challenge(request):
                        ResponseData.error("You are not a participant yet. Please participate first."),
                        status=status.HTTP_200_OK,
                    )
+            if is_updated_file == True:
+                print(f"user_challenge_data.challenge_video {user_challenge_data.challenge_video}")
+                fs = FileSystemStorage(location='static/')
+                fs.delete(str(user_challenge_data.challenge_video).split("/")[1])
             user_challenge_data.challenge_video = f"static/{video_file}"
             user_challenge_data.has_submitted_video = True
             user_challenge_data.save()

@@ -64,7 +64,10 @@ INSTALLED_APPS = [
     'workout',
     'group_challenges',
     'oneToOneChatModule',
-    'channels'
+    'channels',
+    'groupChatModule',
+    'advertisement',
+    'challenges_result'
     # 'background_task'
 ]
 

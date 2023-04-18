@@ -2,7 +2,7 @@
 
 from dataclasses import fields
 from rest_framework import serializers
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentModel, CommitmentNameModel, UserNumberOfCommitmentForNextWeekModel
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentModel, CommitmentNameModel, UserCommitmentsForNextWeekModel
 from positive_affirmations.models import PositiveAffirmationModel, UserAffirmationModel
 
 

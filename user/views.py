@@ -134,11 +134,12 @@ def signup(request):
                 any_health_issues=any_health_issues,
             )
             new_user_health_details.save()
-            user_language_data = userPreferredVoiceLanguageModel.objects.create(
-                user=UserModel(id=new_user.id),
-                voice_assistant_language=voiceAssistantLanguagesModel(id=virtual_assistant_language_id),
-            )
-            user_language_data.save()
+            if virtual_assistant_language_id is not None:
+                user_language_data = userPreferredVoiceLanguageModel.objects.create(
+                    user=UserModel(id=new_user.id),
+                    voice_assistant_language=voiceAssistantLanguagesModel(id=virtual_assistant_language_id),
+                )
+                user_language_data.save()
             generated_referral_code = random_with_N_digits(6)
             new_referral_code = ReferralCodeModel.objects.create(
                 user_id=new_user.id,
@@ -239,7 +240,8 @@ def signin(request):
         referral_code = ReferralCodeModel.objects.filter(
             user_id=user_details[0]['id']).first()
         for i in range(0,len(user_details)):
-            user_details[i]['referralCode'] = referral_code.referral_code
+            if(referral_code is not None):
+                user_details[i]['referralCode'] = referral_code.referral_code
             user_details[i].pop('created_at')
             user_details[i].pop('updated_at')
         player_id_exists = UserPlayerIdModel.objects.filter(
@@ -284,9 +286,17 @@ def is_user_subscribed(request):
             user_subscription_details = UserPaymentDetailsModel.objects.filter(
                 user=UserModel(id=user_id),is_active=True).first()
             if(user_subscription_details is None):
+                subscription_data = UserPaymentDetailsModel.objects.filter(
+                user=UserModel(id=user_id),subscription__is_free_trial = True).first()
+                print(f"subscription_data {subscription_data}")
+                if subscription_data is None:
+                    return Response(
+                        ResponseData.error(
+                            "You are not subscribed currently"),
+                    status=status.HTTP_201_CREATED)
                 return Response(
-                    ResponseData.error(
-                        "You are not subscribed currently"),
+                    ResponseData.free_trial_subscription_messages(
+                        "You free trial subscription is over.",True),
                 status=status.HTTP_201_CREATED)
             subscription_data = SubscriptionModel.objects.filter(id=user_subscription_details.subscription_id).first()
             diff = (datetime.now().date() - user_subscription_details.created_at.date())
@@ -614,13 +624,15 @@ def getAllUsersDetails(request):
                users_data[i]['city_data'].pop('updated_at')
             income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).first()
             if income_range_id is not None:
-               users_data[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
+               income_data = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).first()
+               if income_data is not None:
+                    users_data[i]['income_range_data'] = income_data
+                    users_data[i]['income_range_data'].pop('created_at')
+                    users_data[i]['income_range_data'].pop('updated_at')
                users_data[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()
                users_data[i]['designation_title'] = income_range_id['designation_title']
                users_data[i]['designation_data'].pop('created_at')
                users_data[i]['designation_data'].pop('updated_at')
-               users_data[i]['income_range_data'].pop('created_at')
-               users_data[i]['income_range_data'].pop('updated_at')
             users_data[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
             users_data[i].pop('created_at')
             users_data[i].pop('updated_at')
@@ -782,6 +794,98 @@ def getOverallPerformerOfTheWeek(request):
         )
 
 @api_view(["POST"])
+def getAllDataOfOverallPerformers(request):
+    """Function to get all data of overall performers of all week"""
+    try:
+        users_data = UserModel.objects.values().filter(is_active=True).all()
+        today = datetime.now()
+        start = today - timedelta(days=today.weekday())
+        end = start + timedelta(days=6)
+        sub_start_date = datetime.strptime(str(start).split(" ")[0], "%Y-%m-%d").date()
+        sub_end_date = datetime.strptime(str(end).split(" ")[0], "%Y-%m-%d").date()
+        final_data = []
+        for i in range(0,len(users_data)):
+            max_done_commitments = {
+            "user_id" : "",
+            "max_commitments" : 0
+        }
+            users_data[i]['commitments'] = []
+            max_done_commitments['user_id'] = users_data[i]['id']
+            commitment_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
+            max_done_commitments['max_commitments'] = len(commitment_data)
+            if(len(commitment_data) != 0):
+               final_data.append(max_done_commitments)
+        newlist = sorted(final_data, key=lambda d: d['max_commitments'],reverse=True)
+        user_ids = []
+        print(newlist)
+        if(len(newlist) > 0):
+         user_ids.append(newlist[0]['user_id'])
+        for j in range(1,len(newlist)):
+                if(str(newlist[j]['max_commitments']) == str(newlist[0]['max_commitments'])):
+                    user_ids.append(newlist[j]['user_id'])
+        print("called")
+        if(len(user_ids) == 0):
+          return Response(
+            ResponseData.success(
+                [], "No Data Found"),
+            status=status.HTTP_201_CREATED)
+        total_categories = CommitmentCategoryModel.objects.values().filter().all()
+        finalData = []
+        for k in range(0,len(user_ids)):
+            users_data = UserModel.objects.values().filter(id=user_ids[k],is_active=True).all()
+            for i in range(0,len(users_data)):
+                commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id']).all()
+                users_data[i]['commitments_details'] = {}
+                users_data[i]['commitments_details']['total_commitments'] = commitments_data.count()
+                done_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = True,is_updated = True).all()
+                users_data[i]['commitments_details']['total_commitments_done'] = done_commitments_data.count()
+                notDone_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = True).all()
+                users_data[i]['commitments_details']['total_commitments_not_done'] = notDone_commitments_data.count()
+                notUpdated_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],is_done = False,is_updated = False).all()
+                users_data[i]['commitments_details']['total_commitments_not_updated'] = notUpdated_commitments_data.count()
+                users_data[i]['commitments_details']['category_wise'] = []
+                for j in range(0,len(total_categories)):
+                    data = {}
+                    commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id'])).all()
+                    data['total_commitments'] = commitments_data.count()
+                    done_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = True,is_updated = True).all()
+                    data['total_commitments_done'] = done_commitments_data.count()
+                    notDone_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = True).all()
+                    data['total_commitments_not_done'] = notDone_commitments_data.count()
+                    notUpdated_commitments_data = CommitmentModel.objects.values().filter(Q(commitment_date__range=[sub_start_date, sub_end_date])).filter(user_id = users_data[i]['id'],category = CommitmentCategoryModel(id=total_categories[j]['id']),is_done = False,is_updated = False).all()
+                    data['total_commitments_not_updated'] = notUpdated_commitments_data.count()
+                    data['category_name'] = total_categories[j]['name']
+                    users_data[i]['commitments_details']['category_wise'].append(data)
+                users_data[i].pop('created_at')
+                users_data[i].pop('updated_at')
+                city_id = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()
+                if city_id is not None:
+                  users_data[i]['city_data'] = CitiesModel.objects.values().filter(id=city_id['city_id']).get()
+                  users_data[i]['city_data'].pop('created_at')
+                  users_data[i]['city_data'].pop('updated_at')
+                  income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()
+                if income_range_id is not None:
+                   users_data[i]['income_range_data'] = IncomeModel.objects.values().filter(id=income_range_id['income_range_id']).get()
+                   users_data[i]['designation_data'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()
+                   users_data[i]['designation_title'] = income_range_id['designation_title']
+                   users_data[i]['designation_data'].pop('created_at')
+                   users_data[i]['designation_data'].pop('updated_at')
+                   users_data[i]['income_range_data'].pop('created_at')
+                   users_data[i]['income_range_data'].pop('updated_at')
+                users_data[i]['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=users_data[i]['id'])).get()['age']
+            finalData.append(users_data[i])
+        return Response(
+            ResponseData.success(
+                finalData, "User Details fetched successfully"),
+            status=status.HTTP_201_CREATED)
+
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
 def getOverallPerformerOfTheWeekCategoryWise(request):
     """Function to get overall performer of the week"""
     try:
@@ -886,9 +990,9 @@ def updateProfile(request):
             fullName = request.data["fullName"]
             mobile_number = request.data["mobileNumber"]
             email = request.data["email"]
-            profilePic = request.data["profilePic"]
-            weight = request.data['weight']
+            profilePic = request.FILES['profilePic'] if 'profilePic' in request.FILES else ''
             height = request.data['height']
+            weight = request.data["weight"]
             cityName = request.data['cityName']
             stateName = request.data['stateName']
             countryName = request.data['countryName']
@@ -902,14 +1006,15 @@ def updateProfile(request):
                     ResponseData.error("User id is invalid."),
                     status=status.HTTP_200_OK,
                 )
-            if 'profile_pic' in request.FILES:
-                fs = FileSystemStorage(location='static/')
-                fs.save(request.FILES['profile_pic'].name, request.FILES['profile_pic'])
             userdata.full_name=fullName
             userdata.mobile_number=mobile_number
             userdata.email = email
-            userdata.profile_pic = profilePic
+            if 'profilePic' in request.FILES:
+                userdata.profile_pic = f"static/{request.FILES['profilePic']}"
             userdata.save()
+            if 'profilePic' in request.FILES:
+                fs = FileSystemStorage(location='static/')
+                fs.save(profilePic.name, profilePic)
             userhealthdata = UserHealthDetailsModel.objects.filter(
                 user_id=user_id
             ).first()
@@ -1070,6 +1175,10 @@ def getUserProfileDetails(request):
                  user_details[i]['weight'] = user_health_details['weight']
                  user_details[i]['height'] = user_health_details['height']
                  user_details[i]['gender'] = user_health_details['gender']
+               user_subscription_details = UserPaymentDetailsModel.objects.filter(
+                user=UserModel(id=user_details[i]['id']),is_active=True).first()
+               subscription_data = SubscriptionModel.objects.filter(id=user_subscription_details.subscription_id).first()
+               user_details[i]['is_free_trial'] = subscription_data.is_free_trial
                city_id = UserLocationDetailsModel.objects.values().filter(user=UserModel(id=user_details[i]['id'])).get()
                if city_id is not None:
                 user_details[i]['city_name'] = CitiesModel.objects.values().filter(id=city_id['city_id']).get()['name']
@@ -1091,6 +1200,7 @@ def getUserProfileDetails(request):
                    user_details[i]['redeem_point_data'].pop('updated_at')
                    user_details[i]['redeem_point_data'].pop('created_at')
                    user_details[i]['redeem_point_data'].pop('from_user_id')
+            print(user_details)
             return Response(
                 ResponseData.success(
                     user_details, " User details fetched successfully"),

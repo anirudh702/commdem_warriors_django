@@ -1,5 +1,5 @@
 from django.contrib import admin
-from user.models import UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserSubscriptionDetailsModel, UserWisePrivacyModel
+from user.models import UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserSubscriptionDetailsModel, UserWisePrivacyModel,UserHealthDetailsModel
 from voiceAssistant.models import userPreferredVoiceLanguageModel
 
 # Register your models here.
@@ -9,6 +9,10 @@ class UserModelAdmin(admin.ModelAdmin):
 
 @admin.register(UserPaymentDetailsModel)
 class UserPaymentDetailsModelAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(UserHealthDetailsModel)
+class UserHealthDetailsModelAdmin(admin.ModelAdmin):
     pass
 
 @admin.register(UserSubscriptionDetailsModel)

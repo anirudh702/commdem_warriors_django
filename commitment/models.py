@@ -5,6 +5,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 import django
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
+from positive_affirmations.models import PositiveAffirmationModel
 from user.models import UserModel
 
 def next_day_datetime():
@@ -55,6 +56,7 @@ class   CommitmentModel(models.Model):
     id = models.AutoField(primary_key=True)
     # user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True,default=None)
     user_id=models.IntegerField(blank=True,default=0)
+    total_commitments_done=models.IntegerField(blank=True,default=0)
     category = models.ForeignKey(CommitmentCategoryModel, on_delete=models.CASCADE,null=True)
     commitment_name = models.ForeignKey(CommitmentNameModel, on_delete=models.CASCADE,null=True)
     commitment_date = models.DateTimeField(default=next_day_datetime, blank=True)
@@ -109,10 +111,10 @@ def next_weekday(d, weekday):
         days_ahead += 7
     return d + timedelta(days_ahead)
     
-class UserNumberOfCommitmentForNextWeekModel(models.Model):
+class UserCommitmentsForNextWeekModel(models.Model):
     """Model for storing minimum number of commitments user wise for next week"""
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(UserModel, on_delete=models.CASCADE,blank=True)
+    user_id = models.IntegerField(blank=True,default=0,unique=False)
     min_no_of_food_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(3), MaxValueValidator(7)])
     min_no_of_water_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(4), MaxValueValidator(7)])
     min_no_of_exercise_commitments = models.IntegerField(blank=True,default=0,validators=[MinValueValidator(3), MaxValueValidator(7)])

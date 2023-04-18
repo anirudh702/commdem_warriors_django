@@ -1,5 +1,5 @@
 from django.contrib import admin
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentGraphDataModel, CommitmentModel, CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser, UserNumberOfCommitmentForNextWeekModel
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentGraphDataModel, CommitmentModel, CommitmentNameModel, ExerciseModel, ReasonBehindCommitmentSuccessOrFailureForUser, UserCommitmentsForNextWeekModel
 
 # Register your models here.
 @admin.register(CommitmentCategoryModel)
@@ -40,6 +40,6 @@ class ExerciseModelAdmin(admin.ModelAdmin):
     pass
 
 # Register your models here.
-@admin.register(UserNumberOfCommitmentForNextWeekModel)
+@admin.register(UserCommitmentsForNextWeekModel)
 class UserNumberOfCommitmentForNextWeekModelAdmin(admin.ModelAdmin):
     pass

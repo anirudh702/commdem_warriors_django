@@ -2,7 +2,7 @@
 
 from dataclasses import fields
 from rest_framework import serializers
-from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentModel, CommitmentNameModel, UserNumberOfCommitmentForNextWeekModel
+from commitment.models import CauseOfCategorySuccessOrFailureModel, CommitmentCategoryModel, CommitmentModel, CommitmentNameModel, UserCommitmentsForNextWeekModel
 
 
 class AddCommitmentSerializer(serializers.ModelSerializer):
@@ -31,7 +31,7 @@ class AddUserNumberOfCommitmentsFornextWeekSerializer(serializers.ModelSerialize
     """Serializer for adding number of commitments user wants to do next week"""
     class Meta:
         """Meta class to change behaviour of model fields"""
-        model = UserNumberOfCommitmentForNextWeekModel
+        model = UserCommitmentsForNextWeekModel
         exclude = ["created_at","updated_at"]
 
 class GetCommitmentCategorySerializer(serializers.ModelSerializer):
@@ -57,7 +57,7 @@ class GetUserCommitmentsForCurrentWeekSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(default=None)
     class Meta:
         """Meta class to change behaviour of model fields"""
-        model = UserNumberOfCommitmentForNextWeekModel
+        model = UserCommitmentsForNextWeekModel
         fields = ["user_id"]
 
 class GetCommitmentsSerializer(serializers.ModelSerializer):

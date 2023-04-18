@@ -13,7 +13,7 @@ class UserModel(models.Model):
     full_name = models.CharField(max_length=100,blank=False)
     mobile_number = PhoneNumberField(null=False, blank=False,unique=True,db_index=True,error_messages ={
                     "unique":"This mobile number already exists in our database"
-                    })
+                    })  
     email = models.EmailField(max_length = 254,blank=True,null=True,unique=True,db_index=True,error_messages ={
                     "unique":"This Email already exists in our database"
                     })
@@ -23,6 +23,7 @@ class UserModel(models.Model):
     is_subscribed = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
+    rank = models.IntegerField(blank=True,default=0)
     joining_date = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
@@ -108,6 +109,7 @@ class UserHealthDetailsModel(models.Model):
     age = models.BigIntegerField(blank=False)
     is_medicine_ongoing = models.BooleanField(default=False)
     any_health_issues = models.BooleanField(default=False)
+    number_of_positive_affirmations = models.IntegerField(blank=True,default=5)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     is_active = models.BooleanField(default=False)

@@ -104,9 +104,10 @@ def get_all_subscriptions(request):
                        status=status.HTTP_200_OK,
                    )
                 subscription_details = list(
-                SubscriptionModel.objects.values().filter(
-                    Q(designation_id=is_user_id_valid.designation_id) | Q(designation_id=0)
-                ).order_by('amount'))
+                SubscriptionModel.objects.values().filter(is_active=True)
+                # .filter(
+                #     Q(designation_id=is_user_id_valid.designation_id) | Q(designation_id=0))
+                .order_by('amount'))
                 for i in range(0,len(subscription_details)):
                     if(subscription_details[i]['level_name_id'] is not None):
                      subscription_details[i]['level'] = SubscriptionLevelModel.objects.values().filter(id=subscription_details[i]['level_name_id']).get()['level']
@@ -138,7 +139,7 @@ def get_past_subscriptions_of_user(request):
         serializer = GetSubscriptionSerializer(data=data)
         if serializer.is_valid():
                 user_id = serializer.data['user_id']
-                payment_details = list(UserPaymentDetailsModel.objects.values().filter(user_id=user_id,is_active=True))
+                payment_details = list(UserPaymentDetailsModel.objects.values().order_by('-created_at').filter(user_id=user_id))
                 if len(payment_details) == 0:
                    return Response(
                        ResponseData.error("No subscriptions found"),

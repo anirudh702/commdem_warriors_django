@@ -51,6 +51,13 @@ class Response:
         return {"success": False, "message": error}
 
     @classmethod
+    def free_trial_subscription_messages(cls, message,free_trial_in_past):
+        """
+        Common error method for API response
+        """
+        return {"success": False, "message": message, "free_trial_in_past" : free_trial_in_past}
+
+    @classmethod
     def user_subscribed(cls, message,is_subscribed,is_admin):
         """
         Common error method for API response
