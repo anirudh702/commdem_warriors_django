@@ -8,10 +8,11 @@ from notifications.models import UserPlayerIdModel
 from notifications.views import send_notification_to_admin
 from redeemPoints.models import RedeemPointsModel
 from referralCode.models import ReferralCodeModel
+from reviews.models import ReviewModel
 from subscription.models import SubscriptionModel
-from user.models import UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserProfessionalDetailsModel, UserSubscriptionDetailsModel, UserWisePrivacyModel
+from user.models import UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserProfessionalDetailsModel, UserReviewModel, UserSubscriptionDetailsModel, UserWisePrivacyModel
 from rest_framework.response import Response
-from user.serializers import AddNewPaymentSerializer, AddUserSubscriptionSerializer, GetUserProfileSerializer, GetUserSubscriptionSerializer, UpdateUserPrivacySerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
+from user.serializers import AddNewPaymentSerializer, AddUserReviewSerializer, AddUserSubscriptionSerializer, GetReviewsOfAllUsersSerializer, GetUserProfileSerializer, GetUserSubscriptionSerializer, UpdateUserPrivacySerializer, UpdateUserReviewSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
 from response import Response as ResponseData
 from rest_framework import status
@@ -28,6 +29,7 @@ from django.db.models.expressions import Window
 from django.db.models.functions import Rank
 from voiceAssistant.models import userPreferredVoiceLanguageModel, voiceAssistantLanguagesModel 
 import razorpay
+from django.utils.dateparse import parse_date
 
 from voiceAssistant.views import addAllAfterUpdateVoicesLocally
 load_dotenv()
@@ -1364,3 +1366,203 @@ from twilio.rest import Client
 #                     )
 
 # print(call.sid)
+
+@api_view(["POST"])
+def addNewReviewOfUser(request):
+    """Function to add new review given by a user"""
+    try:
+        data = request.data
+        print(data)
+        serializer = AddUserReviewSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user_id"]
+            data_of_all_reviews = serializer.data["data_of_all_reviews"]
+            user_details = UserModel.objects.filter(
+                         id=user_id
+                     ).first()
+            if user_details is None:
+                        return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+            final_data = []
+            for i in range(0,len(data_of_all_reviews)):
+                review_details = ReviewModel.objects.filter(
+                             id=data_of_all_reviews[i]['review_id']
+                         ).first()
+                if review_details is None:
+                            return Response(
+                           ResponseData.error("Review id is invalid"),
+                           status=status.HTTP_200_OK,
+                       )
+                does_data_exists = UserReviewModel.objects.filter(
+                             user_id=user_id,
+                    review_date = str(data_of_all_reviews[i]['review_date']).split("T")[0]
+                         ).first()
+                if does_data_exists is not None:
+                        return Response(
+                           ResponseData.error("This data already exists"),
+                           status=status.HTTP_200_OK,
+                       )
+                final_data.append(UserReviewModel(
+                    user_id=user_id,
+                    review_id=data_of_all_reviews[i]['review_id'],
+                    star_rating=data_of_all_reviews[i]['star_rating'],
+                    description=data_of_all_reviews[i]['description'],
+                    review_date = str(data_of_all_reviews[i]['review_date']).split("T")[0]
+                ))
+                UserReviewModel.objects.bulk_create(final_data)
+                return Response(
+                    ResponseData.success_without_data(
+                        "Review added successfully"),
+                    status=status.HTTP_201_CREATED,
+                )
+        for error in serializer.errors:
+            print(serializer.errors[error][0])
+        return Response(
+            ResponseData.error(serializer.errors[error][0]),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def updateUserReview(request):
+    """Function to update review details of user""" 
+    try:
+        data = request.data
+        print(data)
+        serializer = UpdateUserReviewSerializer(data=data)
+        if serializer.is_valid():
+            user_id = serializer.data["user_id"]
+            review_id = serializer.data["review_id"]
+            star_rating = serializer.data["star_rating"]
+            description = serializer.data['description']
+            user_review_id = serializer.data['user_review_id']
+            user_review_details = UserReviewModel.objects.filter(
+                         id=user_review_id
+                     ).first()
+            if user_review_details is None:
+                        return Response(
+                       ResponseData.error("User review id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+            user_details = UserModel.objects.filter(
+                         id=user_id
+                     ).first()
+            if user_details is None:
+                        return Response(
+                       ResponseData.error("User id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+            review_details = ReviewModel.objects.filter(
+                         id=review_id
+                     ).first()
+            if review_details is None:
+                        return Response(
+                       ResponseData.error("Review id is invalid"),
+                       status=status.HTTP_200_OK,
+                   )
+            user_review_details.star_rating = star_rating
+            user_review_details.description = description
+            user_review_details.updated_at = datetime.now()
+            user_review_details.save()
+            return Response(
+                ResponseData.success_without_data(
+                    "Review updated successfully"),
+                status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def deleteUserReview(request):
+    """Function to delete user review"""
+    try:
+        data = request.data
+        user_review_id = data["user_review_id"]
+        is_id_valid = UserReviewModel.objects.filter(id=user_review_id).first()
+        if not is_id_valid:
+               return Response(
+                   ResponseData.error("User review id is invalid"),
+                   status=status.HTTP_200_OK,
+               )
+        UserReviewModel.objects.filter(id=user_review_id).delete()
+        return Response(
+            ResponseData.success_without_data("User details deleted successfully"),
+            status=status.HTTP_201_CREATED)
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["POST"])
+def get_reviews_of_all_users(request):
+    """Function to get reviews of all users"""
+    try:
+        data = request.data
+        print(data)
+        serializer = GetReviewsOfAllUsersSerializer(data=data)
+        if serializer.is_valid():
+            page_number = int(serializer.data['page_no'] if 'page_no' in request.data else 0)
+            page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
+            star_rating = serializer.data['star_rating'] if 'star_rating' in request.data else ""
+            search = serializer.data['search'] if 'search' in request.data else ""
+            date_filter = serializer.data['date_filter'] if 'date_filter' in request.data else ""
+            page_no = page_number
+            page_size = page_size_param
+            start=(page_no-1)*page_size
+            end=page_no*page_size
+            if star_rating != "" and search == "" and date_filter == '':
+                get_users_id = UserReviewModel.objects.filter(star_rating=star_rating).values_list('user_id').distinct()[start:end]
+            elif star_rating != "" and search == "" and date_filter != '':
+                get_users_id = UserReviewModel.objects.filter(star_rating=star_rating,review_date = date_filter).values_list('user_id').distinct()[start:end]
+            elif star_rating != "" and search != "" and date_filter == '':
+                get_users_id = UserReviewModel.objects.filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).filter(star_rating=star_rating).values_list('user_id').distinct()[start:end]
+            elif star_rating != "" and search != "" and date_filter != '':
+                get_users_id = UserReviewModel.objects.filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).filter(star_rating=star_rating,review_date = date_filter).values_list('user_id').distinct()[start:end]
+            elif star_rating == "" and search != "" and date_filter == '':
+                get_users_id = UserReviewModel.objects.filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).values_list('user_id').distinct()[start:end]
+            elif star_rating == "" and search != "" and date_filter != '':
+                get_users_id = UserReviewModel.objects.filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).filter(review_date = date_filter).values_list('user_id').distinct()[start:end]
+            elif star_rating == "" and search == "" and date_filter != '':
+                get_users_id = UserReviewModel.objects.filter(review_date = date_filter).values_list('user_id').distinct()[start:end]
+            else:
+                get_users_id = UserReviewModel.objects.values_list('user_id').distinct()[start:end]
+            final_data = []
+            for i in range(0,len(get_users_id)):
+                user_reviews_data = UserReviewModel.objects.values().filter(user_id=get_users_id[i][0]).all()
+                for j in range(0,len(user_reviews_data)):
+                    user_reviews_data[j].pop("created_at")
+                    user_reviews_data[j].pop("updated_at")
+                    user_reviews_data[j].pop("user_id")
+                    user_reviews_data[j]['review_title'] = ReviewModel.objects.values().filter(id=user_reviews_data[j]['review_id']).first()['title']
+                    user_reviews_data[j].pop("review_id")
+                map = {}
+                map['user_id'] = get_users_id[i][0]
+                map['review_data'] = user_reviews_data
+                final_data.append(map)
+            if len(final_data) == 0:
+                    return Response(
+                       ResponseData.success(
+                           [], "No user review found"),
+                       status=status.HTTP_201_CREATED)
+            return Response(
+                       ResponseData.success(
+                           final_data, "User Reviews fetched successfully"),
+                       status=status.HTTP_201_CREATED)
+        return Response(
+                    ResponseData.error(serializer.errors),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+    except Exception as exception:
+        return Response(
+            ResponseData.error(str(exception)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

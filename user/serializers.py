@@ -2,8 +2,7 @@
 
 from dataclasses import fields
 from rest_framework import serializers
-from user.models import UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserSubscriptionDetailsModel
-from django.contrib.auth import password_validation
+from user.models import UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserReviewModel, UserSubscriptionDetailsModel
 
 
 class UserSignUpSerializer(serializers.ModelSerializer):
@@ -107,3 +106,38 @@ class GetAllUsersDetailsSerializer(serializers.ModelSerializer):
         """Meta class to change behaviour of model fields"""
         model = UserModel
         fields = ['id']
+
+
+class AddUserReviewSerializer(serializers.ModelSerializer):
+    """Serializer for adding review by user"""
+    user_id = serializers.IntegerField(default=None)
+    data_of_all_reviews = serializers.ListField(default=None)
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserReviewModel
+        fields = ['user_id','data_of_all_reviews']
+
+class UpdateUserReviewSerializer(serializers.ModelSerializer):
+    """Serializer for updating user review details"""
+    user_id = serializers.IntegerField(default=None)
+    review_id = serializers.IntegerField(default=None)
+    star_rating = serializers.IntegerField(default=None)
+    description = serializers.CharField(default=None)
+    review_date = serializers.DateTimeField(default=None)
+    user_review_id = serializers.IntegerField(default=None)
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserReviewModel
+        fields = ["user_id","review_id","star_rating","description","review_date","user_review_id"]
+
+class GetReviewsOfAllUsersSerializer(serializers.ModelSerializer):
+    """Serializer for getting reviews of all users"""
+    page_no = serializers.IntegerField(default=None)
+    page_size = serializers.IntegerField(default=None)
+    star_rating = serializers.IntegerField(default=None)
+    search = serializers.CharField(default=None)
+    date_filter = serializers.CharField(default=None)
+    class Meta:
+        """Meta class to change behaviour of model fields"""
+        model = UserReviewModel
+        fields = ["page_no","page_size","star_rating","search","date_filter"]

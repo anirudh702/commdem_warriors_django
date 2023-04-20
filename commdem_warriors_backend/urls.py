@@ -37,6 +37,7 @@ urlpatterns = [
     path('positive_affirmations_app/', include("positive_affirmations.urls")),
     path('one_to_one_chat_app/', include("oneToOneChatModule.urls")),
     path('challenges_result_app/', include("challenges_result.urls")),
+    path('reviews_app/', include("reviews.urls")),
     path("graphql", GraphQLView.as_view(graphiql=True)),
 ]
 

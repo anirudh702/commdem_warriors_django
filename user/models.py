@@ -4,6 +4,7 @@ import django
 
 from designation.models import DesignationModel
 from income.models import IncomeModel
+from reviews.models import ReviewModel
 from subscription.models import SubscriptionModel
 
 # Create your models here.
@@ -152,6 +153,18 @@ class UserWisePrivacyModel(models.Model):
     is_my_city_hidden = models.BooleanField(default=True)
     is_my_mobile_number_hidden = models.BooleanField(default=True)
     is_my_designation_title_hidden = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()
+
+class UserReviewModel(models.Model):
+    """Model for storing review submitted by users"""
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True)
+    review = models.ForeignKey(ReviewModel, on_delete=models.CASCADE,null=True)
+    star_rating = models.IntegerField(blank=True,default=0)
+    description = models.CharField(max_length=300,blank=True)
+    review_date = models.DateField(blank=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()

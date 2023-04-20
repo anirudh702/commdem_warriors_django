@@ -67,7 +67,8 @@ INSTALLED_APPS = [
     'channels',
     'groupChatModule',
     'advertisement',
-    'challenges_result'
+    'challenges_result',
+    'reviews'
     # 'background_task'
 ]
 

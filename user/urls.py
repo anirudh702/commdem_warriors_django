@@ -25,4 +25,8 @@ urlpatterns = [
     path('getOverallPerformerOfTheWeek/', views.getOverallPerformerOfTheWeek, name="getOverallPerformerOfTheWeek"),  
     path('getAllDataOfOverallPerformers/', views.getAllDataOfOverallPerformers, name="getAllDataOfOverallPerformers"),   
     path('getOverallPerformerOfTheWeekCategoryWise/', views.getOverallPerformerOfTheWeekCategoryWise, name="getOverallPerformerOfTheWeekCategoryWise"),
+    path('addNewReviewOfUser/', views.addNewReviewOfUser, name="addNewReviewOfUser"),
+    path('updateUserReview/', views.updateUserReview, name="updateUserReview"),
+    path('deleteUserReview/', views.deleteUserReview, name="deleteUserReview"),
+    path('get_reviews_of_all_users/', views.get_reviews_of_all_users, name="get_reviews_of_all_users"),
 ]
