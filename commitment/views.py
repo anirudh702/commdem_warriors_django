@@ -88,12 +88,14 @@ def add_new_commitment(request):
                 users_data = UserModel.objects.filter(id = commitmentsData[i].user_id).first()
                 users_data.rank = i+1
                 users_data.save()
-            final_data.append(CommitmentModel(
+            final_data.append(
+                CommitmentModel(
                 user_id=user_id,
                 commitment_date=datetime.now() + timedelta(days=1),
                 category=CommitmentCategoryModel(id=category_id),
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
-                ))
+                )
+            )
         # CommitmentModel.objects.bulk_create(final_data)
         keysToUpdateInFrontEndModel.objects.update(
                 is_commitment_table_updated = True
