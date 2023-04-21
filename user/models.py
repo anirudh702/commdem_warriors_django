@@ -25,6 +25,7 @@ class UserModel(models.Model):
     is_verified = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
     rank = models.IntegerField(blank=True,default=0)
+    referred_user_code = models.CharField(max_length=10,blank=True,default='')
     joining_date = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
@@ -165,6 +166,26 @@ class UserReviewModel(models.Model):
     star_rating = models.IntegerField(blank=True,default=0)
     description = models.CharField(max_length=300,blank=True)
     review_date = models.DateField(blank=True)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()
+
+class ReferralPaymentStatusModel(models.Model):
+    """Model for displaying referral payment status"""
+    id = models.AutoField(primary_key=True)
+    status = models.CharField(max_length=50,blank=True)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()
+
+class PaymentForReferralUsersModel(models.Model):
+    """Model for storing payment data of users to whom we have to pay money for referral"""
+    id = models.AutoField(primary_key=True)
+    to_user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True,related_name = 'toUser')
+    from_user = models.ForeignKey(UserModel, on_delete=models.CASCADE,null=True,related_name = 'fromUser')
+    unique_pay_id = models.BigIntegerField()
+    amount = models.FloatField(blank=True,default=0.0)
+    referral_payment_status = models.ForeignKey(ReferralPaymentStatusModel, on_delete=models.CASCADE,null=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     objects = models.Manager()

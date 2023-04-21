@@ -1,7 +1,19 @@
 import django
 from django.db import models
+from commitment.models import CommitmentNameModel
 
 from user.models import UserModel
+
+class WorkoutSuggestionsForGroupChallengeModel(models.Model):
+    """Model for storing suggestions of workout for a group challenge"""
+    id = models.AutoField(primary_key=True)
+    workout_name = models.ForeignKey(CommitmentNameModel, on_delete=models.CASCADE,null=True,default=None)
+    created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
+    objects = models.Manager()
+
+    def __str__(self):
+        return self.workout_name
 
 # Create your models here.
 class GroupChallengesModel(models.Model):
@@ -11,6 +23,7 @@ class GroupChallengesModel(models.Model):
     challenge_video_url = models.CharField(max_length=80,blank=False,unique=True,db_index=True)
     challenge_title = models.CharField(max_length=80,db_index=True,default='')
     challenge_image = models.FileField(blank=True)
+    suggested_workout = models.ManyToManyField(CommitmentNameModel)
     min_age=models.IntegerField(blank=True,default=0)
     max_age=models.IntegerField(blank=True,default=0)
     min_rating=models.IntegerField(blank=True,default=0)

@@ -9,7 +9,7 @@ from response import Response as ResponseData
 from rest_framework import status
 from django.db.models import Q
 from django.core.files.storage import FileSystemStorage
-from user.models import UserHealthDetailsModel, UserModel
+from user.models import UserHealthDetailsModel, UserModel, UserPaymentDetailsModel
 from commitment.models import CommitmentCategoryModel, CommitmentModel
 
 # Create your views here.
@@ -135,6 +135,7 @@ def get_all_group_challenges(request):
                            [], "No group challenge found"),
                        status=status.HTTP_201_CREATED)
             for i in range(0,len(challenges_data)):
+                challenges_data[i]['suggested_workout'] = GroupChallengesModel(**challenges_data[i]).suggested_workout.values('mainTitle','id').all()
                 user_age = UserHealthDetailsModel.objects.filter(user_id=user_id).first().age
                 user_gender = UserHealthDetailsModel.objects.filter(user_id=user_id).first().gender
                 user_rating = 0
@@ -153,7 +154,8 @@ def get_all_group_challenges(request):
                     challenges_data[i]['is_user_between_this_age'] = True
                 if(user_rating>=challenges_data[i]['min_rating'] and user_rating<=challenges_data[i]['max_rating']):
                     challenges_data[i]['is_user_rating_between_this_competition_rating'] = True
-                if(challenges_data[i]['start_date'] <= today_date and challenges_data[i]['end_date'] >= today_date and challenges_data[i]['gender'].lower() ==  user_gender.lower()):
+                last_payment = UserPaymentDetailsModel.objects.values().filter(user_id=user_id,is_active=True).last()['date_of_payment'].date()
+                if(((challenges_data[i]['end_date'] - last_payment).days >= 10) and (challenges_data[i]['start_date'] <= today_date and challenges_data[i]['end_date'] >= today_date and challenges_data[i]['gender'].lower() ==  user_gender.lower())):
                     challenges_data[i]['is_participation_allowed'] = True
                 if(challenges_data[i]['end_date'] < today_date ):
                     challenges_data[i]['is_past_competition'] = True

@@ -10,7 +10,7 @@ from redeemPoints.models import RedeemPointsModel
 from referralCode.models import ReferralCodeModel
 from reviews.models import ReviewModel
 from subscription.models import SubscriptionModel
-from user.models import UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserProfessionalDetailsModel, UserReviewModel, UserSubscriptionDetailsModel, UserWisePrivacyModel
+from user.models import PaymentForReferralUsersModel, ReferralPaymentStatusModel, UserCashbackModel, UserGoogleSignInModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserPrivacyModel, UserProfessionalDetailsModel, UserReviewModel, UserSubscriptionDetailsModel, UserWisePrivacyModel
 from rest_framework.response import Response
 from user.serializers import AddNewPaymentSerializer, AddUserReviewSerializer, AddUserSubscriptionSerializer, GetReviewsOfAllUsersSerializer, GetUserProfileSerializer, GetUserSubscriptionSerializer, UpdateUserPrivacySerializer, UpdateUserReviewSerializer, UserSignInSerializer, UserSignUpSerializer, UserSubscribedOrNotSerializer
 from django.core.files.storage import FileSystemStorage
@@ -84,8 +84,8 @@ def signup(request):
                 )
             if(referral_code!=0):
               referral_code_data = ReferralCodeModel.objects.filter(
-                  referral_code=referral_code).all()
-              if referral_code_data.count() == 0:
+                  referral_code=referral_code).get()
+              if referral_code_data is None:
                   return Response(
                       ResponseData.error(
                           "Referral code is invalid"),
@@ -101,6 +101,7 @@ def signup(request):
                 profile_pic= "" if profile_pic == "" else f"static/{profile_pic}",
                 password=password,
                 birth_date=birth_date,
+                referred_user_code=referral_code,
                 is_verified = True if mobile_number == "+917020829599" else False,
                 is_admin = True if mobile_number == "+917020829599" else False,
                 is_active=True if mobile_number == "+917020829599" else False,
@@ -150,7 +151,7 @@ def signup(request):
             new_referral_code.save()
             if(referral_code!=0):
                new_redeem_point = RedeemPointsModel.objects.create(
-                   to_user_id=referral_code_data[0].user.id,
+                   to_user_id=referral_code_data.user.id,
                    from_user_id=new_user.id,
                    redeem_points=25,
                   )
@@ -384,15 +385,20 @@ def addNewPayment(request):
                 is_active = True
             )
             new_payment_record.save()
-            # new_subscription = UserSubscriptionDetailsModel.objects.create(
-            #     user=UserModel(id=user_id),
-            #     subscription_id=subscription_id,
-            #     is_active = True
-            # )
-            # new_subscription.save()
             user_data = UserModel.objects.filter(id=user_id).first()
             user_data.is_subscribed = True
             user_data.save()
+            if user_data.referred_user_code != 0:
+                from_user_referral_code = ReferralCodeModel.objects.filter(
+                referral_code=user_data.referred_user_code).first()
+                from_user_id = UserModel.objects.filter(id=from_user_referral_code.user_id).first()
+                payment_for_referral_user = PaymentForReferralUsersModel.objects.create(
+                    from_user_id=from_user_id,
+                    to_user_id=user_data.id,
+                    referral_payment_status = ReferralPaymentStatusModel(status='Pending'),
+                    amount=30.0
+                )
+                payment_for_referral_user.save()
             return Response(
                 ResponseData.success_without_data(
                     "Subscription done successfully"),
