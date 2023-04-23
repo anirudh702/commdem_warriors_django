@@ -16,11 +16,11 @@ class Response:
         return {"success": True, "data": data, "message": message}
 
     @classmethod
-    def success_for_get_reviews(cls, data, message,can_user_submit_review):
+    def success_for_get_reviews(cls, data, message,can_user_submit_review,next_review_date):
         """
         Common success method for API response
         """
-        return {"success": True, "data": data, "message": message,"can_user_submit_review" : can_user_submit_review}
+        return {"success": True, "data": data, "message": message,"can_user_submit_review" : can_user_submit_review,"next_review_date" : next_review_date}
 
     @classmethod
     def success_with_commitment_update(cls, data, message,isCommitmentUpdated):

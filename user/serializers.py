@@ -134,10 +134,11 @@ class GetReviewsOfAllUsersSerializer(serializers.ModelSerializer):
     """Serializer for getting reviews of all users"""
     page_no = serializers.IntegerField(default=None)
     page_size = serializers.IntegerField(default=None)
-    star_rating = serializers.IntegerField(default=None)
+    star_rating = serializers.CharField(default=None)
     search = serializers.CharField(default=None)
-    date_filter = serializers.CharField(default=None)
+    start_date = serializers.CharField(default=None)
+    end_date = serializers.CharField(default=None)
     class Meta:
         """Meta class to change behaviour of model fields"""
         model = UserReviewModel
-        fields = ["page_no","page_size","star_rating","search","date_filter"]
+        fields = ["page_no","page_size","star_rating","search","start_date","end_date"]

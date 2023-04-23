@@ -12,7 +12,7 @@ from django.core.cache import cache
 from subscription.models import SubscriptionModel
 
 from subscription.serializers import GetSubscriptionSerializer
-from user.models import UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserProfessionalDetailsModel
+from user.models import PaymentForReferralUsersModel, UserHealthDetailsModel, UserLocationDetailsModel, UserModel, UserPaymentDetailsModel, UserProfessionalDetailsModel
 
 # Create your views here.
 
@@ -61,24 +61,29 @@ def get_all_referrals_of_user(request):
                        ResponseData.error("User id is invalid"),
                        status=status.HTTP_200_OK,
                    )
-            data = RedeemPointsModel.objects.values().filter(to_user_id=user_id).all()
+            data = PaymentForReferralUsersModel.objects.values().filter(from_user_id=user_id).all()
             user_data = []
             for i in range(0,len(data)):
+               print(f"vvdf {data[i]}")
                mapData = {}
-               user = UserModel.objects.values().filter(id=data[i]['from_user_id']).get()
+               user = UserModel.objects.values().filter(id=data[i]['to_user_id']).get()
                mapData['user_id'] = user['id']
+               if data[i]['referral_payment_status_id'] == 1:
+                mapData['payment_status'] = 'Pending'
+               else:
+                mapData['payment_status'] = 'Finish'
                mapData['full_name'] = user['full_name']
                mapData['profile_pic'] = user['profile_pic']
                mapData['date_of_joining'] = str(user['joining_date']).split(' ')[0]
-               city = UserLocationDetailsModel.objects.values().filter(user_id=data[i]['from_user_id']).first()
+               city = UserLocationDetailsModel.objects.values().filter(user_id=data[i]['to_user_id']).first()
                if city is not None:
                   mapData['city_name'] = CitiesModel.objects.values().filter(id=city['city_id']).get()['name']
-               income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=data[i]['from_user_id'])).first()
+               income_range_id = UserProfessionalDetailsModel.objects.values().filter(user=UserModel(id=data[i]['to_user_id'])).first()
                if income_range_id is not None:
                   mapData['occupation'] = DesignationModel.objects.values().filter(id=income_range_id['designation_id']).get()['title']
                   mapData['designation_title'] = income_range_id['designation_title']
-               mapData['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=data[i]['from_user_id'])).get()['age']
-               payment_details = list(UserPaymentDetailsModel.objects.values().filter(user_id=data[i]['from_user_id']))
+               mapData['age'] = UserHealthDetailsModel.objects.values().filter(user=UserModel(id=data[i]['to_user_id'])).get()['age']
+               payment_details = list(UserPaymentDetailsModel.objects.values().filter(user_id=data[i]['to_user_id']))
                for j in range(0,len(payment_details)):
                    subscription_details = list(SubscriptionModel.objects.values().filter(
                         id=payment_details[j]['subscription_id']

@@ -96,7 +96,7 @@ def add_new_commitment(request):
                 commitment_name=CommitmentNameModel(id=commitment_name_id),
                 )
             )
-        # CommitmentModel.objects.bulk_create(final_data)
+        CommitmentModel.objects.bulk_create(final_data)
         keysToUpdateInFrontEndModel.objects.update(
                 is_commitment_table_updated = True
             )

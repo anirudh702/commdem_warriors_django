@@ -30,7 +30,7 @@ class CommitmentNameModel(models.Model):
     id = models.AutoField(primary_key=True)
     category = models.ForeignKey(CommitmentCategoryModel, on_delete=models.CASCADE,null=True)
     name = models.CharField(max_length=200,null=False,unique=True,db_index=True)
-    mainTitle = models.CharField(max_length=200,null=False,unique=True,db_index=True)
+    mainTitle = models.CharField(max_length=200,null=False)
     successName = models.CharField(max_length=200,null=False,unique=True,db_index=True)
     failureName = models.CharField(max_length=200,null=False,unique=True,db_index=True)
     currentDayName = models.CharField(max_length=200,null=False,unique=True,db_index=True)

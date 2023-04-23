@@ -68,7 +68,8 @@ INSTALLED_APPS = [
     'groupChatModule',
     'advertisement',
     'challenges_result',
-    'reviews'
+    'reviews',
+    'soloCompetitionsForFreeTrialUsers'
     # 'background_task'
 ]
 
@@ -272,7 +273,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
-TIME_ZONE = 'Asia/Kolkata'
+# TIME_ZONE = 'Asia/Kolkata'
 
 # USE_TZ = True
 

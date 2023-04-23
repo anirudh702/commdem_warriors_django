@@ -391,14 +391,15 @@ def addNewPayment(request):
             if user_data.referred_user_code != 0:
                 from_user_referral_code = ReferralCodeModel.objects.filter(
                 referral_code=user_data.referred_user_code).first()
-                from_user_id = UserModel.objects.filter(id=from_user_referral_code.user_id).first()
-                payment_for_referral_user = PaymentForReferralUsersModel.objects.create(
-                    from_user_id=from_user_id,
-                    to_user_id=user_data.id,
-                    referral_payment_status = ReferralPaymentStatusModel(status='Pending'),
-                    amount=30.0
-                )
-                payment_for_referral_user.save()
+                if from_user_referral_code is not None:
+                    from_user_id = UserModel.objects.filter(id=from_user_referral_code.user_id).first()
+                    payment_for_referral_user = PaymentForReferralUsersModel.objects.create(
+                        from_user_id=from_user_id,
+                        to_user_id=user_data.id,
+                        referral_payment_status = ReferralPaymentStatusModel(status='Pending'),
+                        amount=30.0
+                    )
+                    payment_for_referral_user.save()
             return Response(
                 ResponseData.success_without_data(
                     "Subscription done successfully"),
@@ -651,9 +652,9 @@ def getAllUsersDetails(request):
             users_data[i]['privacy_details'] = {}
             userPrivacyDetails = UserPrivacyModel.objects.values().filter(user_id=users_data[i]['id']).get()
             users_data[i]['privacy_details']['is_age_hidden'] = userPrivacyDetails['is_age_hidden']
-            users_data[i]['privacy_details']['is_city_hidden'] = userPrivacyDetails['is_city_hidden']
+            users_data[i]['privacy_details']['is_city_hidden'] = False
             users_data[i]['privacy_details']['is_mobile_number_hidden'] = userPrivacyDetails['is_mobile_number_hidden']
-            users_data[i]['privacy_details']['is_designation_title_hidden'] = userPrivacyDetails['is_designation_title_hidden']
+            users_data[i]['privacy_details']['is_designation_title_hidden'] = False
         if(request_data['sortBy'] == 'Commitment done (max to min)'):
             users_data = sorted(users_data, key=lambda d: d['commitments_details']['total_commitments_done'],reverse=True)[start:end]
         elif(request_data['sortBy'] == 'Commitment done (min to max)'):
@@ -1417,8 +1418,9 @@ def addNewReviewOfUser(request):
                     description=data_of_all_reviews[i]['description'],
                     review_date = str(data_of_all_reviews[i]['review_date']).split("T")[0]
                 ))
-                UserReviewModel.objects.bulk_create(final_data)
-                return Response(
+            print(f"final_data {final_data}")
+            UserReviewModel.objects.bulk_create(final_data)
+            return Response(
                     ResponseData.success_without_data(
                         "Review added successfully"),
                     status=status.HTTP_201_CREATED,
@@ -1521,40 +1523,49 @@ def get_reviews_of_all_users(request):
             page_size_param = int(serializer.data['page_size'] if 'page_size' in request.data else 0)
             star_rating = serializer.data['star_rating'] if 'star_rating' in request.data else ""
             search = serializer.data['search'] if 'search' in request.data else ""
-            date_filter = serializer.data['date_filter'] if 'date_filter' in request.data else ""
+            start_date = serializer.data['start_date'] if 'start_date' in request.data else ""
+            end_date = serializer.data['end_date'] if 'end_date' in request.data else ""
             page_no = page_number
             page_size = page_size_param
+            if star_rating != "":
+                start_rating = int(str(star_rating).split("-")[0])
+                end_rating = int(str(star_rating).split("-")[1])
             start=(page_no-1)*page_size
             end=page_no*page_size
-            if star_rating != "" and search == "" and date_filter == '':
-                get_users_id = UserReviewModel.objects.filter(star_rating=star_rating).values_list('user_id').distinct()[start:end]
-            elif star_rating != "" and search == "" and date_filter != '':
-                get_users_id = UserReviewModel.objects.filter(star_rating=star_rating,review_date = date_filter).values_list('user_id').distinct()[start:end]
-            elif star_rating != "" and search != "" and date_filter == '':
-                get_users_id = UserReviewModel.objects.filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).filter(star_rating=star_rating).values_list('user_id').distinct()[start:end]
-            elif star_rating != "" and search != "" and date_filter != '':
-                get_users_id = UserReviewModel.objects.filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).filter(star_rating=star_rating,review_date = date_filter).values_list('user_id').distinct()[start:end]
-            elif star_rating == "" and search != "" and date_filter == '':
-                get_users_id = UserReviewModel.objects.filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).values_list('user_id').distinct()[start:end]
-            elif star_rating == "" and search != "" and date_filter != '':
-                get_users_id = UserReviewModel.objects.filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).filter(review_date = date_filter).values_list('user_id').distinct()[start:end]
-            elif star_rating == "" and search == "" and date_filter != '':
-                get_users_id = UserReviewModel.objects.filter(review_date = date_filter).values_list('user_id').distinct()[start:end]
-            else:
-                get_users_id = UserReviewModel.objects.values_list('user_id').distinct()[start:end]
+            get_users_id = UserReviewModel.objects.values_list('user_id').distinct()[start:end]
             final_data = []
+            print(f"get_users_id {get_users_id}")
             for i in range(0,len(get_users_id)):
-                user_reviews_data = UserReviewModel.objects.values().filter(user_id=get_users_id[i][0]).all()
+                if star_rating != "" and search == "" and start_date == '':
+                    user_reviews_data = UserReviewModel.objects.values().filter(user_id=get_users_id[i][0]).filter(Q(star_rating__range=[start_rating, end_rating])).all()
+                elif star_rating != "" and search == "" and start_date != '':
+                    user_reviews_data = UserReviewModel.objects.values().filter(Q(review_date__range=[start_date, end_date]) & Q(star_rating__range=[start_rating, end_rating])).filter(user_id=get_users_id[i][0]).all()
+                elif star_rating != "" and search != "" and start_date == '':
+                    user_reviews_data = UserReviewModel.objects.values().filter((Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)) & (Q(star_rating__range=[start_rating, end_rating]))).filter(user_id=get_users_id[i][0]).all()
+                elif star_rating != "" and search != "" and start_date != '':
+                    user_reviews_data = UserReviewModel.objects.values().filter((Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)) & (Q(star_rating__range=[start_rating, end_rating]))).filter(Q(review_date__range=[start_date, end_date])).filter(user_id=get_users_id[i][0]).all()
+                elif star_rating == "" and search != "" and start_date == '':
+                    user_reviews_data = UserReviewModel.objects.values().filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).filter(user_id=get_users_id[i][0]).all()
+                elif star_rating == "" and search != "" and start_date != '':
+                    user_reviews_data = UserReviewModel.objects.values().filter(Q(user__full_name__icontains=search) | Q(user__mobile_number__icontains=search) | Q(description__icontains=search)).filter(Q(review_date__range=[start_date, end_date])).filter(user_id=get_users_id[i][0]).all()
+                elif star_rating == "" and search == "" and start_date != '':
+                    user_reviews_data = UserReviewModel.objects.values().filter(Q(review_date__range=[start_date, end_date])).filter(user_id=get_users_id[i][0]).all()
+                else:
+                    user_reviews_data = UserReviewModel.objects.values().filter(user_id=get_users_id[i][0]).all()
                 for j in range(0,len(user_reviews_data)):
-                    user_reviews_data[j].pop("created_at")
-                    user_reviews_data[j].pop("updated_at")
-                    user_reviews_data[j].pop("user_id")
+                    # user_reviews_data[j].pop("created_at")
+                    # user_reviews_data[j].pop("updated_at")
+                    # user_reviews_data[j].pop("user_id")
                     user_reviews_data[j]['review_title'] = ReviewModel.objects.values().filter(id=user_reviews_data[j]['review_id']).first()['title']
-                    user_reviews_data[j].pop("review_id")
+                    # user_reviews_data[j].pop("review_id")
                 map = {}
-                map['user_id'] = get_users_id[i][0]
-                map['review_data'] = user_reviews_data
-                final_data.append(map)
+                if len(user_reviews_data) > 0:
+                    user_data = UserModel.objects.filter(id=get_users_id[i][0]).first()
+                    if user_data is not None:
+                        print(f"get_users_id[i][0] {get_users_id[i][0]}")
+                        map['user_name'] = user_data.full_name
+                        map['review_data'] = user_reviews_data
+                        final_data.append(map)
             if len(final_data) == 0:
                     return Response(
                        ResponseData.success(

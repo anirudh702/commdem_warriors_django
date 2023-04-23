@@ -1,12 +1,13 @@
 
 from datetime import datetime
+import datetime as dt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from response import Response as ResponseData
 from rest_framework import status
 from reviews.models import ReviewModel
 from reviews.serializers import AddReviewSerializer, GetReviewSerializer
-from user.models import UserPaymentDetailsModel
+from user.models import UserPaymentDetailsModel, UserReviewModel
 
 # Create your views here.
 
@@ -94,14 +95,25 @@ def get_all_review(request):
             get_user_latest_payment_date = UserPaymentDetailsModel.objects.filter(
             user_id = user_id,is_active=True).last().date_of_payment 
             difference_between_both_dates = current_date - get_user_latest_payment_date.replace(tzinfo=None)
-            if (difference_between_both_dates.days % 15 == 0):
-                can_user_submit_review = True
+            print(f"difference_between_both_dates {difference_between_both_dates.days}")
+            if (difference_between_both_dates.days % 15 == 0 and difference_between_both_dates.days > 14 ):
+                has_user_already_submitted_data_for_today = UserReviewModel.objects.filter(
+                             user_id=user_id,
+                    review_date = str(datetime.now()).split(" ")[0]
+                         ).first()
+                if has_user_already_submitted_data_for_today is None:
+                    can_user_submit_review = True
+                next_review_date = current_date + dt.timedelta(days=15)
+                print(f"sdvsvnext_review_date {next_review_date}")
+            else:
+                next_review_date = get_user_latest_payment_date.replace(tzinfo=None) + dt.timedelta(days=15)
+                print(f"next_review_date {next_review_date}")
             for i in range(0,len(review_details)):
                 review_details[i].pop('created_at')
                 review_details[i].pop('updated_at')
             return Response(
                 ResponseData.success_for_get_reviews(
-                    review_details, "Review details fetched successfully",can_user_submit_review),
+                    review_details, "Review details fetched successfully",can_user_submit_review,str(next_review_date).split(" ")[0]),
                 status=status.HTTP_201_CREATED,)
         return Response(
                     ResponseData.error(serializer.errors),
