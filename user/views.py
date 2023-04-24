@@ -1,6 +1,6 @@
 from rest_framework.decorators import api_view
 from location.models import CitiesModel, CountriesDialCodeModel
-from commitment.models import CommitmentCategoryModel, CommitmentModel
+from commitment.models import CommitmentCategoryModel, CommitmentModel, UserCommitmentsForNextWeekModel
 from designation.models import DesignationModel
 from income.models import IncomeModel
 from location.models import CountriesModel, StatesModel
@@ -348,6 +348,31 @@ def is_user_subscribed(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+class AssignCommitmentForCurrentWeek:
+    def day(self, month):
+ 
+        default = "Incorrect day"
+ 
+        return getattr(self, 'case_' + str(month), lambda: default)()
+ 
+    def case_1(self):
+        return "3-3-4"
+ 
+    def case_2(self):
+        return "2-2-3"
+ 
+    def case_3(self):
+        return "2-2-2"
+
+    def case_4(self):
+        return "2-2-2"
+ 
+    def case_5(self):
+        return "1-1-1"
+ 
+    def case_6(self):
+        return "1-1-1"
+
 @api_view(["POST"])
 def addNewPayment(request):
     """Function to add new payment done by a user"""
@@ -356,7 +381,6 @@ def addNewPayment(request):
         print(data)
         serializer = AddNewPaymentSerializer(data=data)
         if serializer.is_valid():
-            print("dcds")
             user_id = serializer.data["user_id"]
             payment_id = serializer.data["payment_id"]
             subscription_id = serializer.data["subscription_id"]
@@ -400,6 +424,18 @@ def addNewPayment(request):
                         amount=30.0
                     )
                     payment_for_referral_user.save()
+            current_date = datetime.now().weekday() + 1
+            if current_date != 7:
+                values = AssignCommitmentForCurrentWeek().day(current_date)
+                new_data = UserCommitmentsForNextWeekModel.objects.create(
+                    user_id=user_id,
+                    min_no_of_food_commitments=str(values).split("-")[0],
+                    min_no_of_water_commitments=str(values).split("-")[1],
+                    min_no_of_exercise_commitments=str(values).split("-")[2],
+                    start_date = datetime.now() + timedelta(days=1),
+                    end_date = datetime.now() + timedelta(days=7-current_date)
+                )
+                new_data.save()
             return Response(
                 ResponseData.success_without_data(
                     "Subscription done successfully"),

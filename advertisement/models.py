@@ -12,15 +12,13 @@ class AdvertisementModel(models.Model):
     """Model for advertisement data"""
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100,blank=False)
-    description = models.CharField(max_length=300,blank=False)
-    image_url = models.FileField(blank=True)
-    video_url = models.FileField(blank=True)
-    ad_type = models.CharField(max_length=30,blank=False)
-    start_date = models.DateField(blank=True,default=next_day_datetime(1))
-    end_date = models.DateField(blank=True,default=next_day_datetime(7))
+    description = models.CharField(max_length=1000,blank=False)
+    image_url = models.CharField(max_length=300,blank=False)
+    video_url = models.CharField(max_length=300,blank=False)
+    logo = models.FileField(blank=True)
     created_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
     updated_at = models.DateTimeField(default=django.utils.timezone.now, blank=True)
-    status = models.BooleanField(default=False)
+    status = models.BooleanField(default=True)
     objects = models.Manager()
 
 

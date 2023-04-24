@@ -18,11 +18,9 @@ def add_new_advertisement(request):
         if serializer.is_valid():
             title = serializer.data["title"]
             description = serializer.data["description"]
-            image_url = request.FILES['image_url'] if'image_url' in request.FILES else ''
-            video_url = request.FILES['video_url'] if'video_url' in request.FILES else ''
-            ad_type = serializer.data["ad_type"]
-            start_date = serializer.data["start_date"]
-            end_date = serializer.data["end_date"]
+            image_url = serializer.data["image_url"]
+            video_url = serializer.data["video_url"]
+            logo = request.FILES['logo'] if'logo' in request.FILES else ''
             advertisement_exists = AdvertisementModel.objects.filter(title=title,description=description).first()
             if advertisement_exists:
                 return Response(
@@ -35,9 +33,7 @@ def add_new_advertisement(request):
                 description=description,
                 image_url=image_url,
                 video_url=video_url,
-                ad_type=ad_type,
-                start_date=start_date,
-                end_date=end_date
+                logo=logo
             )
             new_advertisement.save()
             return Response(

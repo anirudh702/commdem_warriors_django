@@ -292,7 +292,6 @@ def add_no_of_commitments_user_will_do_next_week(request):
                 min_no_of_exercise_commitments=min_no_of_exercise_commitments,
                 # min_no_of_challenges=min_no_of_challenges
             )
-            print(type(min_no_of_food_commitments))
             new_data.save()
             return Response(
                 ResponseData.success_without_data(
@@ -442,7 +441,7 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             print(f'todays_date {todays_date}')
             isSunday = False
             list_data['did_user_add_commitment_for_next_week'] = False
-            if(calendar.day_name[datetime.now().weekday()]=='Sunday'):
+            if(calendar.day_name[datetime.now().weekday()] == 'Sunday'):
                 isSunday = True
                 next_day = datetime.now() + timedelta(days=1)
                 next_sunday = datetime.now() + timedelta(days=7)
@@ -460,14 +459,12 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             exercise_commitments_promised = user_current_week_commitments_promise['min_no_of_exercise_commitments']
             food_commitments_promised = user_current_week_commitments_promise['min_no_of_food_commitments']
             water_commitments_promised = user_current_week_commitments_promise['min_no_of_water_commitments']
-            # challenges_commitments_promised = user_current_week_commitments_promise['min_no_of_challenges']
             user_current_week_exercise_commitments_finished = len(CommitmentModel.objects.values().filter(is_done=True,user_id=user_id,category__name = 'Exercise',
             commitment_date__date__gte=start_date_of_week,commitment_date__date__lte=todays_date).all())
             user_current_week_food_commitments_finished = len(CommitmentModel.objects.values().filter(is_done=True,user_id=user_id,category__name = 'Food',
             commitment_date__date__gte=start_date_of_week,commitment_date__date__lte=todays_date).all())
             user_current_week_water_commitments_finished = len(CommitmentModel.objects.values().filter(is_done=True,user_id=user_id,category__name = 'Water',
             commitment_date__date__gte=start_date_of_week,commitment_date__date__lte=todays_date).all())
-            user_current_week_competitions_commitments_finished = 0
             list_data['user_id'] = user_id
             list_data['number_of_commitment_for_week_id'] = user_current_week_commitments_promise['id']
             list_data['start_date_of_week'] = start_date_of_week
@@ -478,8 +475,6 @@ def get_number_of_all_commitments_of_user_of_the_week(request):
             list_data['user_current_week_food_commitments_finished'] = user_current_week_food_commitments_finished
             list_data['water_commitments_promised'] = water_commitments_promised
             list_data['user_current_week_water_commitments_finished'] = user_current_week_water_commitments_finished
-            # list_data['challenges_commitments_promised'] = challenges_commitments_promised
-            # list_data['user_current_week_competitions_commitments_finished'] = user_current_week_competitions_commitments_finished
             payment_data = UserPaymentDetailsModel.objects.filter(
                 user_id=user_id,is_active=True).first()
             is_premium_subscription_active = SubscriptionModel.objects.values().filter(
