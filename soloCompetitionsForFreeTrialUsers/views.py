@@ -55,7 +55,12 @@ def get_all_solo_challenges(request):
                 is_user_participant = ParticipantsInSoloChallengeModel.objects.filter(user_id=user_id,solo_challenge_id=challenges_data[i]['id']).first()
                 if is_user_participant is not None:
                     challenges_data[i]['has_user_submitted_video'] = is_user_participant.has_submitted_video
-                    challenges_data[i]['challenge_video'] = f"{is_user_participant.challenge_video}"           
+                    challenges_data[i]['challenge_video'] = f"{is_user_participant.challenge_video}"  
+                new_data = ParticipantsInSoloChallengeModel.objects.create(
+                    user_id=user_id,
+                    solo_challenge_id=challenges_data[i]['id']
+                )
+                new_data.save()         
             for i in range(0,len(challenges_data)):
                 challenges_data[i].pop('created_at')
                 challenges_data[i].pop('updated_at')
@@ -77,7 +82,7 @@ def upload_video_for_solo_challenge(request):
     """Function to upload solo challenge video of a user"""
     try:
         data = request.data
-        print(f"data {data}")
+        print(f"dddfdfata {data}")
         serializer = UploadVideoOfUserSoloChallengeSerializer(data=data)
         if serializer.is_valid():
             user_id = serializer.data["user_id"]
@@ -96,7 +101,7 @@ def upload_video_for_solo_challenge(request):
                        ResponseData.error("Solo challenge id is invalid"),
                        status=status.HTTP_200_OK,
                    )
-            user_challenge_data = ParticipantsInSoloChallengeModel.objects.filter(user_id=user_id,solo_challenge_id=solo_challenge_id,hide_from_user=False).get()
+            user_challenge_data = ParticipantsInSoloChallengeModel.objects.filter(user_id=user_id,solo_challenge_id=solo_challenge_id,hide_from_user=False).first()
             if is_updated_file == True:
                 print(f"user_challenge_data.challenge_video {user_challenge_data.challenge_video}")
                 fs = FileSystemStorage(location='static/')
