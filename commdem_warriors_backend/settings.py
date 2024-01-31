@@ -144,12 +144,12 @@ DATABASE_APPS_MAPPING = {
 
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("DATABASE_ENGINE"),
-        "NAME": os.getenv("DATABASE_NAME"),
-        "USER": os.getenv("DATABASE_USER"),
-        "PASSWORD": os.getenv("DATABASE_PASSWORD"),
-        "HOST": os.getenv("DATABASE_HOST"),
-        "PORT": os.getenv("DATABASE_PORT"),
+        "ENGINE": os.getenv("DATABASE_ENGINE","django.db.backends.postgresql"),
+        "NAME": os.getenv("DATABASE_NAME","commdem_warriors"),
+        "USER": os.getenv("DATABASE_USER","postgres"),
+        "PASSWORD": os.getenv("DATABASE_PASSWORD","123"),
+        "HOST": os.getenv("DATABASE_HOST","localhost"),
+        "PORT": os.getenv("DATABASE_PORT","5432"),
     },
     # 'commitment_db': {
     #     'ENGINE': 'django.db.backends.postgresql',
