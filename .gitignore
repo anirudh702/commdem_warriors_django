@@ -1,0 +1,6 @@
+.env
+.firebase
+env/
+.remove_migrations.py
+static/
+data/
